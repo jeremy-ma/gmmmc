@@ -1,28 +1,9 @@
 __author__ = 'jeremyma'
-import numpy as np
-from distributions import gmm
-from scipy.stats import multivariate_normal
-import pdb
-from numba import jit
 import logging
 
-# TODO: Make class implementation with prior and proposal distributions
-
-
-class MarkovChainMonteCarlo():
-    
-
-
-
-
-
-
-
-
-
-
-
-
+import numpy as np
+from numba import jit
+from trial import gmm_test
 
 @jit
 def block_means_proposal(X, current_means, current_weights, current_covars, n_mixtures, step_size=0.001):
@@ -39,7 +20,7 @@ def block_means_proposal(X, current_means, current_weights, current_covars, n_mi
     """
     acceptance_count = 0
     new_means = current_means
-    previous_likelihood = gmm.log_likelihood(X, n_mixtures, new_means, current_covars, current_weights)
+    previous_likelihood = gmm_test.log_likelihood(X, n_mixtures, new_means, current_covars, current_weights)
     for mixture in xrange(n_mixtures):
         # propose new means
         new_mixture_means = np.random.multivariate_normal(current_means[mixture], step_size * np.eye(X.shape[1]))
@@ -50,7 +31,7 @@ def block_means_proposal(X, current_means, current_weights, current_covars, n_mi
         proposed_means[mixture] = new_mixture_means
 
         # distributions
-        proposed_likelihood = gmm.log_likelihood(X, n_mixtures, proposed_means, current_covars, current_weights)
+        proposed_likelihood = gmm_test.log_likelihood(X, n_mixtures, proposed_means, current_covars, current_weights)
 
         # posterior
         previous_posterior = previous_likelihood
@@ -91,8 +72,8 @@ def block_weights_proposal(X, current_means, current_weights, current_covars, n_
         new_weights = current_weights
 
         if np.logical_and(0 <= proposed_weights, proposed_weights <= 1).all():
-            previous_likelihood = gmm.log_likelihood(X, n_mixtures, current_means, current_covars, current_weights)
-            proposed_likelihood = gmm.log_likelihood(X, n_mixtures, current_means, current_covars, new_weights)
+            previous_likelihood = gmm_test.log_likelihood(X, n_mixtures, current_means, current_covars, current_weights)
+            proposed_likelihood = gmm_test.log_likelihood(X, n_mixtures, current_means, current_covars, new_weights)
 
             # posterior
             previous_posterior = previous_likelihood
@@ -124,7 +105,7 @@ def block_covariance_proposal(X, current_means, current_weights, current_covars,
     """
     acceptance_count = 0
     new_covars = np.array(current_covars)
-    previous_likelihood = gmm.log_likelihood(X, n_mixtures, current_means, current_covars, current_weights)
+    previous_likelihood = gmm_test.log_likelihood(X, n_mixtures, current_means, current_covars, current_weights)
 
     for mixture in xrange(n_mixtures):
         # propose new means
@@ -135,7 +116,7 @@ def block_covariance_proposal(X, current_means, current_weights, current_covars,
             proposed_covars[mixture] = new_mixture_covars
 
             # distributions
-            proposed_likelihood = gmm.log_likelihood(X, n_mixtures, current_means, proposed_covars, current_weights)
+            proposed_likelihood = gmm_test.log_likelihood(X, n_mixtures, current_means, proposed_covars, current_weights)
 
             # posterior
             previous_posterior = previous_likelihood

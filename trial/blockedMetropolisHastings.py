@@ -34,11 +34,13 @@ def weighPropPositive(currWeights, step=0.01):
     numMixtures = len(currWeights)
     newWeights = np.zeros(numMixtures)
 
+    print "start weight proposition"
     while newWeights.min() < 0 or newWeights.max() == 0:
         proposedMove = step * np.random.normal(size=numMixtures - 1)
         newWeights[:] = 0
         newWeights[1:] = currWeights[1:] + proposedMove
         newWeights[0] = 1 - np.sum(newWeights[1:])
+    print "finished weight proposition"
 
     return newWeights, weightAcceptanceMod(newWeights, currWeights, step)
 

@@ -1,6 +1,7 @@
 import numpy as np
-from distributions import gmm
-import scipy.stats
+
+from trial import gmm_test
+
 
 def gmm_mean_sample(X, true_weights, true_covars, n_runs=10000, n_mixtures=32):
 
@@ -9,7 +10,7 @@ def gmm_mean_sample(X, true_weights, true_covars, n_runs=10000, n_mixtures=32):
     weights = np.zeros((n_runs))
     for run in xrange(n_runs):
         # because of uniform distribution
-        weights[run] = gmm.log_likelihood(X, n_mixtures, samples[run], true_covars, true_weights)
+        weights[run] = gmm_test.log_likelihood(X, n_mixtures, samples[run], true_covars, true_weights)
 
     return samples, weights
 
