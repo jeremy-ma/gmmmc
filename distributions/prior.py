@@ -73,7 +73,7 @@ class GMMWeightsUniformPrior():
         self.alpha = [1 for _ in xrange(n_mixtures)]
 
     def log_likelihood(self, weights):
-        if np.isclose(np.sum(weights), 1.0):
+        if np.isclose(np.sum(weights), 1.0) and np.logical_and(0 <= weights, weights <= 1).all():
             #return some constant value
             return -0.5
         else:

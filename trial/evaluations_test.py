@@ -5,8 +5,6 @@ import numpy as np
 from scipy.misc import logsumexp
 from sklearn.mixture import GMM
 
-from distributions import gmm_test
-from monte_carlo import metropolis_hastings_test
 from trial import importance_test, metropolis_hastings_test, gmm_test
 
 
@@ -44,7 +42,7 @@ def evaluate_metropolis_hastings(n_mixtures=1, n_features=1, n_runs=10000):
     likelihoods = []
     for i in xrange(weight_samples.shape[0]):
         likelihoods.append(
-            gmm_test.log_likelihood(sample, n_mixtures, means_monte[i], covar_samples[i], weight_samples[i]))
+            gmm_test.log_likelihood(sample, n_mixtures, means_monte[i], covar_samples[i], truth_gmm.weights_))
 
     likelihood_monte = logsumexp(likelihoods) - np.log(len(means_monte))
 
@@ -79,7 +77,7 @@ def evaluate_metropolis_hastings(n_mixtures=1, n_features=1, n_runs=10000):
 
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.INFO)
-    evaluate_metropolis_hastings(n_mixtures=8, n_features=30, n_runs=50000)
+    evaluate_metropolis_hastings(n_mixtures=1, n_features=1, n_runs=20000)
     # naive importance sampling
     # profile distributions stuff
 

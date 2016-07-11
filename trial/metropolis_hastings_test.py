@@ -85,6 +85,7 @@ def block_weights_proposal(X, current_means, current_weights, current_covars, n_
                 # accept proposal
                 new_weights = proposed_weights
                 accepted = 1
+
     else:
         new_weights = current_weights
 
@@ -110,6 +111,7 @@ def block_covariance_proposal(X, current_means, current_weights, current_covars,
     for mixture in xrange(n_mixtures):
         # propose new means
         new_mixture_covars = np.random.multivariate_normal(current_covars[mixture], step_size * np.eye(X.shape[1]))
+        print new_mixture_covars
         if (new_mixture_covars > 0).all():
             # try out the new covars
             proposed_covars = np.array(new_covars)
