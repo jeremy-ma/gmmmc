@@ -3,6 +3,7 @@ import sklearn.mixture
 from scipy.stats import multivariate_normal
 from scipy.misc import logsumexp
 from fast_likelihood import gmm_likelihood
+import multiprocessing
 
 """
 cdef extern from 'math.h':
@@ -58,5 +59,12 @@ class GMM:
     def sample(self, n_samples):
         return self.gmm.sample(n_samples)
 
-    def log_likelihood(self, X):
-        return gmm_likelihood(X, self.means, self.covars, self.weights)
+    def log_likelihood(self, X, n_jobs=1):
+        if n_jobs == 0 or n_jobs < -1:
+            raise ValueError('n_jobs must be valid')
+
+        if n_jobs == -1:
+            # use all available cores
+            n_jobs = multiprocessing.cpu_count()
+
+        return gmm_likelihood(X, self.means, self.covars, self.weights, n_jobs)

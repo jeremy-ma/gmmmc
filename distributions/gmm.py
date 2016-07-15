@@ -1,10 +1,12 @@
 import numpy as np
 import sklearn.mixture
+from optimisation import fast_likelihood
+import multiprocessing
 
 class GMM():
     """Gaussian Mixture Model Distribution"""
 
-    def __init__(self, means, weights, covariances):
+    def __init__(self, means, weights, covariances, n_jobs=1):
         if len(covariances.shape) == 2:
             self.covariance_type = 'diag'
         else:
@@ -14,6 +16,12 @@ class GMM():
         self.gmm.covars_ = covariances
         self.gmm.means_ = means
         self.n_mixtures = len(weights)
+        if n_jobs == 0:
+            raise ValueError("n_jobs==0 has no meaning")
+        elif n_jobs < 0:
+            self.n_jobs = multiprocessing.cpu_count()
+        else:
+            self.n_jobs = n_jobs
 
     @property
     def means(self):
@@ -35,4 +43,10 @@ class GMM():
         return self.gmm.sample(n_samples)
 
     def log_likelihood(self, X):
-        return np.sum(self.gmm.score(X))
+
+        if self.n_jobs == 1:
+            return np.sum(self.gmm.score(X))
+        else:
+            #print self.n_jobs
+            return fast_likelihood.gmm_likelihood(X, self.means, self.covars, self.weights, n_jobs=self.n_jobs)
+

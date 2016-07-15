@@ -89,7 +89,6 @@ double data_logprob_threaded(double * __restrict data, double * __restrict means
 	long i;
 	double temp;
 	int TID;
-    printf("serp\n");
 
 	#pragma omp parallel num_threads(n_threads) default(none) shared(icov, means, covars, weights, n_features, n_mixtures, n_samples, gconst,tarray, data,lprob) \
 	private(i,TID,temp)
@@ -98,7 +97,7 @@ double data_logprob_threaded(double * __restrict data, double * __restrict means
 		//compute icov values
         #pragma omp for
 		for(i=0;i< n_features * n_mixtures;i++){
-			icov[i] = 2.0; //1.0/covars[i];
+			icov[i] = 1.0/covars[i];
 		}
 
 		//compute gconst values
@@ -114,8 +113,7 @@ double data_logprob_threaded(double * __restrict data, double * __restrict means
         #pragma omp for reduction(+:lprob)
             for(i=0;i < n_samples;i++){
                 //lprob += vec_logprob(data + i * n_features,rgmm,tarray+(TID*rgmm.nmix),gconst,icov); //compute log prob per vector
-                //lprob += vec_logprob(data + i * n_features, means, icov, weights, n_mixtures, n_features, tarray + (TID * n_mixtures), gconst);
-                lprob += 5.0;
+                lprob += vec_logprob(data + i * n_features, means, icov, weights, n_mixtures, n_features, tarray + (TID * n_mixtures), gconst);
             }
 
 	} //--- end parallel region---
@@ -125,10 +123,4 @@ double data_logprob_threaded(double * __restrict data, double * __restrict means
 	free(static_cast<void*>(icov)); //free memory allocated to icov
 
 	return lprob;
-}
-
-int main(void){
-    f();
-
-    return 0;
 }
