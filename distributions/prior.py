@@ -2,6 +2,8 @@ import numpy as np
 import scipy.stats
 from scipy.misc import logsumexp
 from gmm import GMM
+from expiringdict import ExpiringDict
+import xxhash
 import abc
 
 # TODO: Input verification
@@ -32,7 +34,17 @@ class GMMPrior():
     def sample(self):
         return GMM(self.means_prior.sample(), self.weights_prior.sample(), self.covars_prior.sample())
 
-class MeansGaussianPrior():
+class GMMParameterPrior:
+
+    @abc.abstractmethod
+    def log_prob(self, params):
+        """Compute log probability of entire space of parameters (means/covariances/weights)"""
+        pass
+
+    def log_prob_single(self, param):
+        """Compute log probability of a single set of parameters (mean/covariance/weight) vector"""
+
+class MeansGaussianPrior(GMMParameterPrior):
     def __init__(self, prior_means, covariances):
         """
         Gaussian Prior for GMM means
@@ -42,7 +54,7 @@ class MeansGaussianPrior():
         # shape should be (n_mixtures, n_features)
         self.means = prior_means
         self.covars = covariances
-
+        self.cache = ExpiringDict(max_len=1024, max_age_seconds=100)
         self.distributions = [scipy.stats.multivariate_normal(self.means[i], self.covars[i])\
                               for i in xrange(len(self.means))]
 
@@ -52,14 +64,36 @@ class MeansGaussianPrior():
         :param means:
         :return:
         """
-        # logsumexp probabilities
-        return logsumexp([normal.pdf(means) for normal in self.distributions])
+        log_prob = 0
+        for i, normal in enumerate(self.distributions):
+            hashval = xxhash.xxh32(means[i]).intdigest()
+            result = self.cache.get(hashval)
+            if result is None:
+                log_prob_mean = self.log_prob_single(means[i], i)
+                self.cache[hashval] = (log_prob_mean, means[i])
+            else:
+                log_prob_mean, mean = result
+                if not np.array_equal(mean, means[i]):
+                    log_prob_mean = self.log_prob_single(means[i], i)
+                    self.cache[hashval] = (log_prob_mean, means[i])
+            log_prob += log_prob_mean
+
+        return log_prob
+
+    def log_prob_single(self, mean, mixture_num):
+        """
+        compute the log probability of the means for a specific mixture
+        :param mean:
+        :param mixture_num:
+        :return:
+        """
+        return self.distributions[mixture_num].logpdf(mean)
 
     def sample(self):
         # one at a time
         return np.array([normal.rvs() for normal in self.distributions])
 
-class MeansUniformPrior():
+class MeansUniformPrior(GMMParameterPrior):
     """Uniform prior for means"""
     def __init__(self, low, high, n_mixtures, n_features):
         self.low = low
@@ -69,13 +103,16 @@ class MeansUniformPrior():
 
     def log_prob(self, means):
         # just return some constant value
-        return -0.5
+        return 0.0
+
+    def log_prob_single(self, mean):
+        return 0.0
 
     def sample(self):
         # sample means
         return np.random.uniform(self.low, self.high, size=(self.n_mixtures, self.n_features))
 
-class DiagCovarsUniformPrior():
+class DiagCovarsUniformPrior(GMMParameterPrior):
     """Uniform Prior for diagonal covariances"""
     def __init__(self, low, high, n_mixtures, n_features):
         self.low = low
@@ -88,7 +125,14 @@ class DiagCovarsUniformPrior():
             return -np.inf
         else:
             # return some constant value
-            return -0.5
+            return 0.0
+
+    def log_prob_single(self, covar):
+        if (covar < 0).any():
+            return -np.inf
+        else:
+            # return some constant value
+            return 0.0
 
     def sample(self):
         return np.random.uniform(self.low, self.high, size=(self.n_mixtures, self.n_features))
@@ -131,7 +175,7 @@ class WeightsUniformPrior():
     def log_prob(self, weights):
         if np.isclose(np.sum(weights), 1.0) and np.logical_and(0 <= weights, weights <= 1).all():
             #return some constant value
-            return -0.5
+            return 0.0
         else:
             return -np.inf
 
@@ -146,7 +190,7 @@ class WeightsStaticPrior():
 
     def log_prob(self, covariances):
         # check that weights are the same
-        return 0
+        return 0.0
 
     def sample(self):
         return np.array(self.prior_weights)

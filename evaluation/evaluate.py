@@ -4,7 +4,7 @@ from distributions.gmm import GMM
 from monte_carlo.proposals import *
 from monte_carlo.monte_carlo import MarkovChain, AnnealedImportanceSampling
 from scipy.misc import logsumexp
-from multiprocessing import Pool
+import multiprocessing
 import numpy as np
 import logging
 import sklearn
@@ -19,11 +19,10 @@ def create_data(n_mixtures=1, n_features=1, n_samples=1000):
 
     # draw samples from the true distribution
     X = truth_gmm.sample(n_samples)
-
     with open('pickledgmm_n_mixtures{0}_n_features{1}'.format(n_mixtures, n_features),'w') as fp:
         cPickle.dump((truth_gmm, X), fp)
 
-def evaluate_mcmc(truth_gmm, X, n_mixtures = 1, n_features = 1, n_runs = 10000, n_jobs=1):
+def evaluate_mcmc( X, truth_gmm, n_mixtures = 1, n_runs = 10000, n_jobs=1):
 
     # get test sample
     sample = np.array([X[0]])
@@ -36,13 +35,15 @@ def evaluate_mcmc(truth_gmm, X, n_mixtures = 1, n_features = 1, n_runs = 10000, 
 
     ########### MCMC ##################################
     # setup monte carlo sampler
-    prior = GMMPrior(MeansGaussianPrior(gmm_ml.means_, gmm_ml.covars_),
+    #pdb.set_trace()
+    scale = 1.0
+    prior = GMMPrior(MeansGaussianPrior(gmm_ml.means_, covariances=np.ones((n_mixtures, X.shape[1]))*scale),
                      CovarsStaticPrior(gmm_ml.covars_),
                      WeightsStaticPrior(gmm_ml.weights_))
     # DiagCovarsUniformPrior(low=0, high=1,n_mixtures=n_mixtures, n_features=n_features),
     # WeightsUniformPrior(n_mixtures=n_mixtures))
     target = GMMPosteriorTarget(prior)
-    proposal = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(step_size=0.01), n_jobs=n_jobs)
+    proposal = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(step_size=0.001), n_jobs=n_jobs)
     # propose_weights=GaussianStepWeightsProposal(n_mixtures, step_size=0.0005),
     # propose_covars=GaussianStepCovarProposal(step_size=0.001))
     initial_gmm = GMM(means=gmm_ml.means_, weights=gmm_ml.weights_, covariances=gmm_ml.covars_)
@@ -60,7 +61,7 @@ def evaluate_mcmc(truth_gmm, X, n_mixtures = 1, n_features = 1, n_runs = 10000, 
     logging.info('True Likelihood: {0}'.format(true_likelihood))
 
 
-def evaluate_ais(X, truth_gmm, n_mixtures = 1, n_features = 1, n_samples = 200, n_jobs=1):
+def evaluate_ais(X, truth_gmm, n_mixtures = 1,  n_samples = 200, n_jobs=1):
 
     # get test sample
     sample = np.array([X[0]])
@@ -72,10 +73,11 @@ def evaluate_ais(X, truth_gmm, n_mixtures = 1, n_features = 1, n_samples = 200, 
     likelihood_ml = np.sum(gmm_ml.score(sample))
 
     ################ AIS ####################################
-    prior_ais = GMMPrior(MeansGaussianPrior(prior_means=gmm_ml.means_, covariances=gmm_ml.covars_),
+    scale = 0.5
+    prior_ais = GMMPrior(MeansGaussianPrior(prior_means=gmm_ml.means_, covariances=np.ones((n_mixtures, X.shape[1])*scale)),
                          CovarsStaticPrior(prior_covars=gmm_ml.covars_),
                          WeightsStaticPrior(prior_weights=gmm_ml.weights_))
-    proposal_ais = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(step_size=0.01), propose_iterations=10, n_jobs=n_jobs)
+    proposal_ais = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(step_size=0.0001), propose_iterations=10, n_jobs=n_jobs)
     ais_sampler = AnnealedImportanceSampling(proposal_ais, prior_ais, betas=np.linspace(0, 1, 100))
 
     ais_samples, logweights = ais_sampler.sample(X, n_samples)
@@ -89,6 +91,7 @@ def evaluate_ais(X, truth_gmm, n_mixtures = 1, n_features = 1, n_samples = 200, 
 
     logging.info('AIS Means Acceptance: {0}'.format(proposal_ais.get_means_acceptance()))
     logging.info('AIS Likelihood: {0}'.format(ais_likelihood))
+    logging.info('ML Estimate Likelihood: {0}'.format(likelihood_ml))
     logging.info('True Likelihood: {0}'.format(true_likelihood))
 
 def load_data(n_mixtures=32, n_features=12):
@@ -98,18 +101,13 @@ def load_data(n_mixtures=32, n_features=12):
 
 if __name__=='__main__':
     logging.getLogger().setLevel(logging.INFO)
-    #create_data(n_mixtures=32, n_features=12, n_samples=1000)
-    truth_gmm, X = load_data(n_mixtures=32, n_features=12)
+    create_data(n_mixtures=128, n_features=64, n_samples=1000)
+    truth_gmm, X = load_data(n_mixtures=128, n_features=64)
+    start = time.time()
+    evaluate_mcmc( X, truth_gmm, n_mixtures=128, n_runs=100, n_jobs=-1)
+    print time.time() - start
     #start = time.time()
-    #evaluate_mcmc(truth_gmm, X, n_mixtures=32, n_features=12, n_runs=200, n_jobs=1)
+    #evaluate_ais( X, truth_gmm, n_mixtures=32, n_samples=2, n_jobs=2)
     #print time.time() - start
-    start = time.time()
-    evaluate_ais(truth_gmm, X, n_mixtures=32, n_features=12, n_samples=2, n_jobs=2)
-    print time.time() - start
 
-    start = time.time()
-    evaluate_ais(truth_gmm, X, n_mixtures=32, n_features=12, n_samples=2, n_jobs=2)
-    print time.time() - start
 
-    p = Pool(2)
-    print(p.map(evaluate_ais, [1, 2, 3]))

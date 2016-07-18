@@ -3,6 +3,7 @@ import numpy as np
 import pdb
 from distributions.gmm import GMM
 
+
 class Proposal(object):
     def __init__(self):
         self.count_proposed = 0
@@ -44,6 +45,7 @@ class GaussianStepMeansProposal(Proposal):
 
             # ratio
             ratio = proposed_prob - previous_prob
+
             if ratio > 0 or ratio > np.log(np.random.uniform()):
                 # accept proposal
                 new_means = proposed_means
