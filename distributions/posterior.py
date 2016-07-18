@@ -1,6 +1,6 @@
 
 class GMMPosteriorTarget:
-    """Posterior distribution (target distribution)"""
+    """Posterior distribution (targets distribution)"""
     def __init__(self, prior, beta = 1):
         """
         :param prior: prior distributions used

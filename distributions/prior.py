@@ -41,8 +41,10 @@ class GMMParameterPrior:
         """Compute log probability of entire space of parameters (means/covariances/weights)"""
         pass
 
+    @abc.abstractmethod
     def log_prob_single(self, param):
         """Compute log probability of a single set of parameters (mean/covariance/weight) vector"""
+        pass
 
 class MeansGaussianPrior(GMMParameterPrior):
     def __init__(self, prior_means, covariances):

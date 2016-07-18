@@ -43,13 +43,13 @@ def evaluate_mcmc( X, truth_gmm, n_mixtures = 1, n_runs = 10000, n_jobs=1):
     # DiagCovarsUniformPrior(low=0, high=1,n_mixtures=n_mixtures, n_features=n_features),
     # WeightsUniformPrior(n_mixtures=n_mixtures))
     target = GMMPosteriorTarget(prior)
-    proposal = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(step_size=0.001), n_jobs=n_jobs)
+    proposal = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(step_size=0.001))
     # propose_weights=GaussianStepWeightsProposal(n_mixtures, step_size=0.0005),
     # propose_covars=GaussianStepCovarProposal(step_size=0.001))
     initial_gmm = GMM(means=gmm_ml.means_, weights=gmm_ml.weights_, covariances=gmm_ml.covars_)
     mc = MarkovChain(proposal, target, initial_gmm)
     # make samples
-    gmm_samples = mc.sample(X, n_samples=n_runs)
+    gmm_samples = mc.sample(X, n_samples=n_runs, n_jobs=n_jobs)
     # discard gmm samples
     gmm_samples[int(n_runs / 2)::50]
     markov_chain_likelihood = logsumexp([gmm.log_likelihood(sample) for gmm in gmm_samples]) - np.log(len(gmm_samples))
@@ -77,10 +77,11 @@ def evaluate_ais(X, truth_gmm, n_mixtures = 1,  n_samples = 200, n_jobs=1):
     prior_ais = GMMPrior(MeansGaussianPrior(prior_means=gmm_ml.means_, covariances=np.ones((n_mixtures, X.shape[1])*scale)),
                          CovarsStaticPrior(prior_covars=gmm_ml.covars_),
                          WeightsStaticPrior(prior_weights=gmm_ml.weights_))
-    proposal_ais = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(step_size=0.0001), propose_iterations=10, n_jobs=n_jobs)
+    proposal_ais = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(step_size=0.0001),
+                                              propose_iterations=10)
     ais_sampler = AnnealedImportanceSampling(proposal_ais, prior_ais, betas=np.linspace(0, 1, 100))
 
-    ais_samples, logweights = ais_sampler.sample(X, n_samples)
+    ais_samples, logweights = ais_sampler.sample(X, n_samples, n_jobs)
     # calculate estimated likelihood with importance mean samples
     numerator = [logweights[i] + gmm.log_likelihood(sample) for i, gmm in enumerate(ais_samples)]
     numerator = logsumexp(numerator)

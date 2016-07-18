@@ -16,12 +16,7 @@ class GMM():
         self.gmm.covars_ = covariances
         self.gmm.means_ = means
         self.n_mixtures = len(weights)
-        if n_jobs == 0:
-            raise ValueError("n_jobs==0 has no meaning")
-        elif n_jobs < 0:
-            self.n_jobs = multiprocessing.cpu_count()
-        else:
-            self.n_jobs = n_jobs
+
 
     @property
     def means(self):
@@ -42,11 +37,18 @@ class GMM():
     def sample(self, n_samples):
         return self.gmm.sample(n_samples)
 
-    def log_likelihood(self, X):
+    def log_likelihood(self, X, n_jobs=1):
 
-        if self.n_jobs == 1:
+        if n_jobs == 0:
+            raise ValueError("n_jobs==0 has no meaning")
+        elif n_jobs < 0:
+            n_jobs = multiprocessing.cpu_count()
+        else:
+            n_jobs = n_jobs
+
+        if n_jobs == 1:
             return np.sum(self.gmm.score(X))
         else:
-            #print self.n_jobs
-            return fast_likelihood.gmm_likelihood(X, self.means, self.covars, self.weights, n_jobs=self.n_jobs)
+            #
+            return fast_likelihood.gmm_likelihood(X, self.means, self.covars, self.weights, n_jobs=n_jobs)
 
