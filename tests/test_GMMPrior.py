@@ -1,5 +1,5 @@
 from unittest import TestCase
-from prior import *
+from distributions.prior import *
 import numpy as np
 from distributions.gmm import GMM
 

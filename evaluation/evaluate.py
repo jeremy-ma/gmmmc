@@ -10,8 +10,10 @@ import logging
 import sklearn
 import cPickle
 import time
+import matplotlib.pyplot as plt
 
-def create_data(n_mixtures=1, n_features=1, n_samples=1000):
+
+def create_data(n_mixtures, n_features, n_samples):
     # single mixture gmm
     truth_gmm = GMM(means=np.random.uniform(low=-1, high=1, size=(n_mixtures, n_features)),
                     weights=np.random.dirichlet(np.ones((n_mixtures))),
@@ -22,93 +24,151 @@ def create_data(n_mixtures=1, n_features=1, n_samples=1000):
     with open('pickledgmm_n_mixtures{0}_n_features{1}'.format(n_mixtures, n_features),'w') as fp:
         cPickle.dump((truth_gmm, X), fp)
 
-def evaluate_mcmc( X, truth_gmm, n_mixtures = 1, n_runs = 10000, n_jobs=1):
 
-    # get test sample
-    sample = np.array([X[0]])
+
+def evaluate_mcmc( X, truth_gmm, n_mixtures, n_runs, n_jobs=1):
 
     ################ ML Estimate #####################
 
     gmm_ml = sklearn.mixture.GMM(n_components=n_mixtures, covariance_type='diag')
     gmm_ml.fit(X)
-    likelihood_ml = np.sum(gmm_ml.score(sample))
 
     ########### MCMC ##################################
     # setup monte carlo sampler
     #pdb.set_trace()
+    """
     scale = 1.0
     prior = GMMPrior(MeansGaussianPrior(gmm_ml.means_, covariances=np.ones((n_mixtures, X.shape[1]))*scale),
+                     #MeansUniformPrior(-1, 1, n_mixtures, X.shape[1]),
                      CovarsStaticPrior(gmm_ml.covars_),
                      WeightsStaticPrior(gmm_ml.weights_))
-    # DiagCovarsUniformPrior(low=0, high=1,n_mixtures=n_mixtures, n_features=n_features),
-    # WeightsUniformPrior(n_mixtures=n_mixtures))
     target = GMMPosteriorTarget(prior)
-    proposal = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(step_size=0.001))
-    # propose_weights=GaussianStepWeightsProposal(n_mixtures, step_size=0.0005),
-    # propose_covars=GaussianStepCovarProposal(step_size=0.001))
-    initial_gmm = GMM(means=gmm_ml.means_, weights=gmm_ml.weights_, covariances=gmm_ml.covars_)
+    proposal = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(step_sizes=[0.001, 0.01, 0.1]))
+    initial_gmm = GMM(means=np.random.uniform(low=-1, high=1, size=(n_mixtures, X.shape[1])),
+                      weights=truth_gmm.weights,
+                      covariances=truth_gmm.covars)
+    """
+
+    prior = GMMPrior(MeansUniformPrior(-1, 1, n_mixtures, X.shape[1]),
+                     DiagCovarsUniformPrior(0.01, 1, n_mixtures, X.shape[1]),
+                     WeightsUniformPrior(n_mixtures))
+
+    target = GMMPosteriorTarget(prior)
+
+    proposal = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(step_sizes=[0.05, 0.15, 0.5]),
+                                          propose_covars=GaussianStepCovarProposal(step_sizes=[0.0001]),
+                                          propose_weights=GaussianStepWeightsProposal(n_mixtures,
+                                                                                      step_sizes=[0.01, 0.1]),
+                                          propose_iterations=5)
+
+    initial_gmm = GMM(means=gmm_ml.means_,
+                      weights=gmm_ml.weights_,
+                      covariances=gmm_ml.covars_)
+
     mc = MarkovChain(proposal, target, initial_gmm)
     # make samples
     gmm_samples = mc.sample(X, n_samples=n_runs, n_jobs=n_jobs)
+
     # discard gmm samples
     gmm_samples[int(n_runs / 2)::50]
-    markov_chain_likelihood = logsumexp([gmm.log_likelihood(sample) for gmm in gmm_samples]) - np.log(len(gmm_samples))
-    true_likelihood = truth_gmm.log_likelihood(sample)
 
-    logging.info('MCMC Means Acceptance: {0}'.format(proposal.propose_mean.get_acceptance()))
-    logging.info('MCMC Likelihood: {0}'.format(markov_chain_likelihood))
-    logging.info('ML Estimate Likelihood: {0}'.format(likelihood_ml))
-    logging.info('True Likelihood: {0}'.format(true_likelihood))
+    #################################################################################################################
+    test_samples = truth_gmm.sample(10)
+    likelihood_ml = [np.sum(gmm_ml.score(np.array([sample]))) for sample in test_samples]
+    markov_chain_likelihood = [logsumexp([gmm.log_likelihood(np.array([sample]), n_jobs=-1) for gmm in gmm_samples]) - np.log(len(gmm_samples))\
+                               for sample in test_samples]
+    true_likelihood = [truth_gmm.log_likelihood(np.array([sample])) for sample in test_samples]
 
 
-def evaluate_ais(X, truth_gmm, n_mixtures = 1,  n_samples = 200, n_jobs=1):
+    logging.info('Means Acceptance: {0}'.format(proposal.propose_mean.get_acceptance()))
+    logging.info('Covars Acceptance: {0}'.format(proposal.propose_covars.get_acceptance()))
+    logging.info('Weights Acceptance: {0}'.format(proposal.propose_weights.get_acceptance()))
+    logging.info('MCMC Likelihood: {0}'.format(str(markov_chain_likelihood)))
+    logging.info('ML Estimate Likelihood: {0}'.format(str(likelihood_ml)))
+    logging.info('True Likelihood: {0}'.format(str(true_likelihood)))
+
+    covars = np.array([sample.covars for sample in gmm_samples])
+    print covars
+    means = np.array([sample.means for sample in gmm_samples])
+    plt.scatter(means[:, 0], np.ones(means.shape[0]), color = 'red')
+    plt.scatter(means[:, 1], np.ones(means.shape[0]), color = 'red')
+    plt.scatter(gmm_ml.means_[0], 1.5, color='blue')
+    plt.scatter(gmm_ml.means_[1], 1.5, color='blue')
+    plt.scatter(truth_gmm.means[0], 2, color='green')
+    plt.scatter(truth_gmm.means[1], 2, color='green')
+    plt.show()
+
+def evaluate_ais(X, truth_gmm, n_mixtures = 1,  n_samples = 10000, n_jobs=1):
 
     # get test sample
     sample = np.array([X[0]])
 
     ################ ML Estimate #####################
 
-    gmm_ml = sklearn.mixture.GMM(n_components=n_mixtures, covariance_type='diag')
+    gmm_ml = sklearn.mixture.GMM(n_components=n_mixtures, covariance_type='diag', n_iter=100000)
     gmm_ml.fit(X)
-    likelihood_ml = np.sum(gmm_ml.score(sample))
 
     ################ AIS ####################################
-    scale = 0.5
-    prior_ais = GMMPrior(MeansGaussianPrior(prior_means=gmm_ml.means_, covariances=np.ones((n_mixtures, X.shape[1])*scale)),
-                         CovarsStaticPrior(prior_covars=gmm_ml.covars_),
-                         WeightsStaticPrior(prior_weights=gmm_ml.weights_))
-    proposal_ais = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(step_size=0.0001),
-                                              propose_iterations=10)
-    ais_sampler = AnnealedImportanceSampling(proposal_ais, prior_ais, betas=np.linspace(0, 1, 100))
+    scale = 5
+    prior_ais = GMMPrior(#MeansGaussianPrior(prior_means=gmm_ml.means_, covariances=np.ones((n_mixtures, X.shape[1]))*scale),
+                         MeansUniformPrior(-1,1,n_mixtures,X.shape[1]),
+                         DiagCovarsUniformPrior(0.01,1,n_mixtures, X.shape[1]),
+                         WeightsUniformPrior(n_mixtures))
+    proposal_ais = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(step_sizes=[0.05, 0.15, 0.5]),
+                                              propose_covars=GaussianStepCovarProposal(step_sizes=[0.1]),
+                                              propose_weights=GaussianStepWeightsProposal(n_mixtures,step_sizes=[0.01,0.1]),
+                                              propose_iterations=5)
+    ais_sampler = AnnealedImportanceSampling(proposal_ais, prior_ais, betas=np.logspace(0, 1, 50))
 
     ais_samples, logweights = ais_sampler.sample(X, n_samples, n_jobs)
+
+    ##############################################
+    test_samples = truth_gmm.sample(10)
+
     # calculate estimated likelihood with importance mean samples
-    numerator = [logweights[i] + gmm.log_likelihood(sample) for i, gmm in enumerate(ais_samples)]
-    numerator = logsumexp(numerator)
+    numerator = [[logweights[i] + gmm.log_likelihood(np.array([sample])) for i, gmm in enumerate(ais_samples)] for sample in test_samples]
+    numerator = np.array(numerator)
+    numerator = logsumexp(numerator, axis=1)
     denominator = logsumexp(logweights)
     ais_likelihood = numerator - denominator
+    ais_likelihood = [x for x in ais_likelihood]
 
-    true_likelihood = truth_gmm.log_likelihood(sample)
+    likelihood_ml = [np.sum(gmm_ml.score(np.array([sample]))) for sample in test_samples]
+    true_likelihood = [truth_gmm.log_likelihood(np.array([sample])) for sample in test_samples]
 
-    logging.info('AIS Means Acceptance: {0}'.format(proposal_ais.get_means_acceptance()))
-    logging.info('AIS Likelihood: {0}'.format(ais_likelihood))
-    logging.info('ML Estimate Likelihood: {0}'.format(likelihood_ml))
-    logging.info('True Likelihood: {0}'.format(true_likelihood))
+    logging.info('AIS Means Acceptance: {0}'.format(proposal_ais.propose_mean.get_acceptance()))
+    logging.info('AIS Covars Acceptance: {0}'.format(proposal_ais.propose_covars.get_acceptance()))
+    logging.info('AIS Weights Acceptance: {0}'.format(proposal_ais.propose_weights.get_acceptance()))
+    logging.info('AIS Likelihood:  {0}'.format(str(ais_likelihood)))
+    logging.info('ML Likelihood:   {0}'.format(str(likelihood_ml)))
+    logging.info('True Likelihood: {0}'.format(str(true_likelihood)))
 
-def load_data(n_mixtures=32, n_features=12):
+    means = np.array([sample.means for sample in ais_samples])
+    plt.scatter(means[:, 0], np.ones(means.shape[0]), color = 'red')
+    plt.scatter(means[:, 1], np.ones(means.shape[0]), color = 'black')
+    plt.scatter(gmm_ml.means_[0], 1.5, color='blue')
+    plt.scatter(gmm_ml.means_[1], 1.5, color='blue')
+    plt.scatter(truth_gmm.means[0], 2, color='green')
+    plt.scatter(truth_gmm.means[1], 2, color='green')
+    plt.show()
+
+
+def load_data(n_mixtures, n_features):
     with open('pickledgmm_n_mixtures{0}_n_features{1}'.format(n_mixtures, n_features)) as fp:
         truth_gmm, X = cPickle.load(fp)
     return (truth_gmm, X)
 
 if __name__=='__main__':
     logging.getLogger().setLevel(logging.INFO)
-    create_data(n_mixtures=128, n_features=64, n_samples=1000)
-    truth_gmm, X = load_data(n_mixtures=128, n_features=64)
+    create_data(n_mixtures=2, n_features=1, n_samples=1000)
+    truth_gmm, X = load_data(n_mixtures=2, n_features=1)
+
     start = time.time()
-    evaluate_mcmc( X, truth_gmm, n_mixtures=128, n_runs=100, n_jobs=-1)
+    evaluate_mcmc( X, truth_gmm, n_mixtures=2, n_runs=10000, n_jobs=-1)
     print time.time() - start
+
     #start = time.time()
-    #evaluate_ais( X, truth_gmm, n_mixtures=32, n_samples=2, n_jobs=2)
+    #evaluate_ais( X, truth_gmm, n_mixtures=2, n_samples=100, n_jobs=-1)
     #print time.time() - start
 
 

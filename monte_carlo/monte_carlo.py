@@ -34,7 +34,13 @@ class MarkovChain(MonteCarloBase):
 class AnnealedImportanceSampling(MonteCarloBase):
 
     def __init__(self, proposal, priors, betas):
-        self.targets = betas
+        """
+
+        :param proposal:
+        :param priors:
+        :param betas: array of betas in ascending order
+        """
+        self.targets = [GMMPosteriorTarget(priors, beta,) for beta in betas]
         self.proposal = proposal
         self.priors = priors
 
@@ -57,15 +63,15 @@ class AnnealedImportanceSampling(MonteCarloBase):
 
         for anneal_run, target in enumerate(self.targets):
             if anneal_run == 0 or anneal_run == len(self.targets) - 2:
-                continue # skip the prior only beta
+                continue # skip the prior only beta and the last one
             samples.append(cur_gmm)
             cur_gmm = self.proposal.propose(X, cur_gmm, target, n_jobs)
 
         numerator = 0
         denominator = 0
         for run, sample in enumerate(samples):
-            numerator += self.targets[run + 1].log_prob(X, sample)
-            denominator += self.targets[run].log_prob(X, sample)
+            numerator += self.targets[run + 1].log_prob(X, sample, n_jobs)
+            denominator += self.targets[run].log_prob(X, sample, n_jobs)
 
         weight = numerator - denominator
 

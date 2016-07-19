@@ -16,6 +16,10 @@ class GMM():
         self.gmm.covars_ = covariances
         self.gmm.means_ = means
         self.n_mixtures = len(weights)
+        try:
+            self.n_features = means.shape[1]
+        except:
+            raise ValueError("Means array must be 2 dimensional")
 
 
     @property
@@ -30,9 +34,6 @@ class GMM():
     def weights(self):
         return self.gmm.weights_
 
-    @property
-    def n_mixtures(self):
-        return self.n_mixtures
 
     def sample(self, n_samples):
         return self.gmm.sample(n_samples)

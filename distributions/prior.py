@@ -3,7 +3,7 @@ import scipy.stats
 from scipy.misc import logsumexp
 from gmm import GMM
 from expiringdict import ExpiringDict
-import xxhash
+import xxhash, pdb
 import abc
 
 # TODO: Input verification
@@ -42,7 +42,7 @@ class GMMParameterPrior:
         pass
 
     @abc.abstractmethod
-    def log_prob_single(self, param):
+    def log_prob_single(self, param, mixture_num):
         """Compute log probability of a single set of parameters (mean/covariance/weight) vector"""
         pass
 
@@ -59,6 +59,10 @@ class MeansGaussianPrior(GMMParameterPrior):
         self.cache = ExpiringDict(max_len=1024, max_age_seconds=100)
         self.distributions = [scipy.stats.multivariate_normal(self.means[i], self.covars[i])\
                               for i in xrange(len(self.means))]
+        try:
+            self.n_features = prior_means.shape[1]
+        except:
+            raise ValueError("Means must be 2d")
 
     def log_prob(self, means):
         """
@@ -93,7 +97,7 @@ class MeansGaussianPrior(GMMParameterPrior):
 
     def sample(self):
         # one at a time
-        return np.array([normal.rvs() for normal in self.distributions])
+        return np.array([[normal.rvs()] if self.n_features == 1 else normal.rvs() for normal in self.distributions])
 
 class MeansUniformPrior(GMMParameterPrior):
     """Uniform prior for means"""
@@ -107,7 +111,7 @@ class MeansUniformPrior(GMMParameterPrior):
         # just return some constant value
         return 0.0
 
-    def log_prob_single(self, mean):
+    def log_prob_single(self, mean, mixture):
         return 0.0
 
     def sample(self):
@@ -123,14 +127,14 @@ class DiagCovarsUniformPrior(GMMParameterPrior):
         self.n_features = n_features
 
     def log_prob(self, covars):
-        if (covars < 0).any():
+        if (covars < self.low).any() or (covars > self.high).any():
             return -np.inf
         else:
             # return some constant value
             return 0.0
 
-    def log_prob_single(self, covar):
-        if (covar < 0).any():
+    def log_prob_single(self, covar, mixture_num):
+        if (covar < self.low).any() or (covar > self.high).any():
             return -np.inf
         else:
             # return some constant value
@@ -139,7 +143,7 @@ class DiagCovarsUniformPrior(GMMParameterPrior):
     def sample(self):
         return np.random.uniform(self.low, self.high, size=(self.n_mixtures, self.n_features))
 
-class CovarsInvWishartPrior():
+class CovarsInvWishartPrior(GMMParameterPrior):
     """Inverse Wishart Prior for covariance matrix"""
     def __init__(self, degrees_freedom, scale):
         """
@@ -151,10 +155,13 @@ class CovarsInvWishartPrior():
         self.distribution = scipy.stats.invWishart(df=self.df, scale=self.scale)
 
     def log_prob(self, covariances):
-        log_probs = [self.distribution.logpdf(covariance) for covariance in covariances]
+        raise NotImplementedError()
+
+    def log_prob_single(self, param, mixture_num):
+        raise NotImplementedError()
 
 
-class CovarsStaticPrior():
+class CovarsStaticPrior(GMMParameterPrior):
     """ Assume that covariance is fixed """
     def __init__(self, prior_covars):
         self.prior_covars = prior_covars
@@ -166,10 +173,17 @@ class CovarsStaticPrior():
         else:
             return -np.inf
 
+    def log_prob_single(self, covariance, mixture_num):
+        """Assign probability to single covariance matrix"""
+        if np.allclose(self.prior_covars[mixture_num], covariance):
+            return 0.0
+        else:
+            return -np.inf
+
     def sample(self):
         return np.array(self.prior_covars)
 
-class WeightsUniformPrior():
+class WeightsUniformPrior(GMMParameterPrior):
     """Uniform Prior for Weights (Dirichlet distribution)"""
     def __init__(self, n_mixtures):
         self.alpha = [1 for _ in xrange(n_mixtures)]
@@ -181,23 +195,32 @@ class WeightsUniformPrior():
         else:
             return -np.inf
 
+    def log_prob_single(self, weights, mixture_num):
+        return self.log_prob(weights)
+
     def sample(self):
         return np.random.dirichlet(self.alpha, 1)[0]
 
 
-class WeightsStaticPrior():
+class WeightsStaticPrior(GMMParameterPrior):
     """ Assume Weights are fixed """
     def __init__(self, prior_weights):
         self.prior_weights = prior_weights
 
-    def log_prob(self, covariances):
+    def log_prob(self, weights):
         # check that weights are the same
-        return 0.0
+        if np.all(np.isclose(weights, self.prior_weights)):
+            return 0.0
+        else:
+            return -np.inf
+
+    def log_prob_single(self, weights, mixture_num):
+        return self.log_prob(weights)
 
     def sample(self):
         return np.array(self.prior_weights)
 
-class WeightsDirichletPrior():
+class WeightsDirichletPrior(GMMParameterPrior):
     """ Dirichlet prior for weights of GMM """
     def __init__(self, alpha):
         """
@@ -208,6 +231,9 @@ class WeightsDirichletPrior():
 
     def log_prob(self, weights):
         return scipy.stats.dirichlet.logpdf(weights, self.alpha)
+
+    def log_prob_single(self, weights, mixture_num):
+        return self.log_prob(weights)
 
     def sample(self):
         return np.random.dirichlet(self.alpha)

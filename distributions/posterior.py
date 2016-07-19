@@ -9,5 +9,5 @@ class GMMPosteriorTarget:
         self.prior = prior
         self.beta = beta
 
-    def log_prob(self, X, gmm):
+    def log_prob(self, X, gmm, n_jobs):
         return self.beta * gmm.log_likelihood(X) + self.prior.log_prob(gmm)
