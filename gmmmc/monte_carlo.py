@@ -32,40 +32,45 @@ class MarkovChain(MonteCarloBase):
         return samples
 
 class AnnealedImportanceSampling(MonteCarloBase):
-
     def __init__(self, proposal, priors, betas):
-        """
-
-        :param proposal:
-        :param priors:
-        :param betas: array of betas in ascending order
-        """
         self.targets = [GMMPosteriorTarget(priors, beta,) for beta in betas]
         self.proposal = proposal
         self.priors = priors
 
-    def sample(self, X, n_samples, n_jobs=1):
+    def sample(self, X, n_samples, n_jobs=1, diagnostics=None):
+        """
+
+        :param X:
+        :param n_samples:
+        :param n_jobs:
+        :param diagnostics: Empty dictionary to be filled with diagnostic information about intermediate distributions
+        :return:
+        """
         samples = []
         weights = []
         for run in xrange(n_samples):
             logging.info('Run: {0}'.format(run))
-            sample, weight = self.anneal(X, n_jobs)
+            if diagnostics is not None:
+                diagnostics[run] = {}
+                sample, weight = self.anneal(X, n_jobs, diagnostics[run])
+            else:
+                sample, weight = self.anneal(X, n_jobs)
             samples.append(sample)
             weights.append(weight)
 
         return (samples, weights)
 
-    def anneal(self, X, n_jobs):
+    def anneal(self, X, n_jobs, diagnostics=None):
         # draw from prior
         cur_gmm = self.priors.sample()
         samples = []
-        samples.append(cur_gmm)
 
-        for anneal_run, target in enumerate(self.targets):
-            if anneal_run == 0 or anneal_run == len(self.targets) - 2:
-                continue # skip the prior only beta and the last one
+        for anneal_run, target in enumerate(self.targets[1:-1]):
+            # skip first T_n (prior only) and last transition T_0 (posterior) (not necessary)
             samples.append(cur_gmm)
             cur_gmm = self.proposal.propose(X, cur_gmm, target, n_jobs)
+
+        samples.append(cur_gmm)
 
         numerator = 0
         denominator = 0
