@@ -1,6 +1,6 @@
 import numpy as np
 import sklearn.mixture
-from optimisation import fast_likelihood
+from gmmmc.fastgmm import gmm_likelihood
 import multiprocessing
 
 class GMM():
@@ -51,5 +51,5 @@ class GMM():
             return np.sum(self.gmm.score(X))
         else:
             #
-            return fast_likelihood.gmm_likelihood(X, self.means, self.covars, self.weights, n_jobs=n_jobs)
+            return gmm_likelihood(X, self.means, self.covars, self.weights, n_jobs=n_jobs)
 

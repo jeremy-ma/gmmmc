@@ -1,16 +1,14 @@
+import abc
 import numpy as np
 import scipy.stats
-from scipy.misc import logsumexp
-from gmm import GMM
+import xxhash
 from expiringdict import ExpiringDict
-import xxhash, pdb
-import abc
+from gmmmc import GMM
 
-# TODO: Input verification
 class GMMPrior():
     def __init__(self, means_prior, covars_prior, weights_prior):
         """
-        Class containing prior distributions for GMM means, weights covariances
+        Class containing prior priors for GMM means, weights covariances
         :param means_prior: Class for priors of GMM means
         :param covars_prior: Class for priors of GMM covariances
         :param weights_prior: Class fo priors of GMM weights
@@ -109,10 +107,17 @@ class MeansUniformPrior(GMMParameterPrior):
 
     def log_prob(self, means):
         # just return some constant value
-        return 0.0
+        if (means < self.low).any() or (means > self.high).any():
+            return -np.inf
+        else:
+            return 0.0
 
     def log_prob_single(self, mean, mixture):
-        return 0.0
+        if (mean < self.low).any() or (mean > self.high).any():
+            # if invalid value
+            return -np.inf
+        else:
+            return 0.0
 
     def sample(self):
         # sample means
@@ -196,11 +201,11 @@ class WeightsUniformPrior(GMMParameterPrior):
             return -np.inf
 
     def log_prob_single(self, weights, mixture_num):
-        return self.log_prob(weights)
+        """Not needed"""
+        raise NotImplementedError()
 
     def sample(self):
         return np.random.dirichlet(self.alpha, 1)[0]
-
 
 class WeightsStaticPrior(GMMParameterPrior):
     """ Assume Weights are fixed """

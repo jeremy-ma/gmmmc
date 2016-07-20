@@ -30,7 +30,7 @@ def block_means_proposal(X, current_means, current_weights, current_covars, n_mi
         proposed_means = np.array(new_means)
         proposed_means[mixture] = new_mixture_means
 
-        # distributions
+        # priors
         proposed_likelihood = gmm_test.log_likelihood(X, n_mixtures, proposed_means, current_covars, current_weights)
 
         # posterior
@@ -117,7 +117,7 @@ def block_covariance_proposal(X, current_means, current_weights, current_covars,
             proposed_covars = np.array(new_covars)
             proposed_covars[mixture] = new_mixture_covars
 
-            # distributions
+            # priors
             proposed_likelihood = gmm_test.log_likelihood(X, n_mixtures, current_means, proposed_covars, current_weights)
 
             # posterior

@@ -1,46 +1,6 @@
-import abc
 import numpy as np
-import pdb
-from distributions.gmm import GMM
-from collections import defaultdict
-
-class Proposal(object):
-    def __init__(self):
-        self.count_proposed = 0.0
-        self.count_accepted = 0.0
-        self.count_illegal = 0.0
-
-    def get_acceptance(self):
-        return self.count_accepted / self.count_proposed
-
-    def get_illegal(self):
-        return self.count_illegal / self.count_proposed
-
-    """ generic proposal function"""
-    @abc.abstractmethod
-    def propose(self, X, gmm, target, n_jobs=1):
-        pass
-
-class GMMBlockMetropolisProposal(Proposal):
-
-    def __init__(self, propose_mean=None, propose_covars=None, propose_weights=None, propose_iterations=1):
-        self.propose_mean = propose_mean
-        self.propose_covars = propose_covars
-        self.propose_weights = propose_weights
-        self.propose_iterations = propose_iterations
-
-    def propose(self, X, gmm, target, n_jobs=1):
-        new_gmm = gmm
-        for _ in xrange(self.propose_iterations):
-            if self.propose_mean is not None:
-                new_gmm = self.propose_mean.propose(X, new_gmm, target, n_jobs)
-
-            if self.propose_covars is not None:
-                new_gmm = self.propose_covars.propose(X, new_gmm, target, n_jobs)
-
-            if self.propose_weights is not None:
-                new_gmm = self.propose_weights.propose(X, new_gmm, target, n_jobs)
-        return new_gmm
+from gmmmc.gmm import GMM
+from gmmmc.proposals.proposals import Proposal
 
 
 class GaussianStepMeansProposal(Proposal):
@@ -79,12 +39,10 @@ class GaussianStepMeansProposal(Proposal):
                 new_log_prob_mixture = prior.means_prior.log_prob_single(new_mixture_means, mixture)
                 new_log_prob_priors = log_prob_priors - log_priors[mixture] + new_log_prob_mixture
 
-                # distributions
+                # priors
                 proposed_prob = beta * proposed_gmm.log_likelihood(X, n_jobs) + new_log_prob_priors
-
                 # ratio
                 ratio = proposed_prob - previous_prob
-
                 if ratio > 0 or ratio > np.log(np.random.uniform()):
                     # accept proposal
                     new_means = proposed_means
@@ -176,8 +134,6 @@ class GaussianStepWeightsProposal(Proposal):
 
     def propose(self, X, gmm, target, n_jobs=1):
         accepted = False
-        beta = target.beta
-        prior = target.prior
 
         cur_gmm = gmm
         if gmm.n_mixtures > 1:
@@ -189,7 +145,7 @@ class GaussianStepWeightsProposal(Proposal):
                 proposed_weights = self.invTransformSimplex(proposed_weights_transformed   )
                 if np.logical_and(0 <= proposed_weights, proposed_weights <= 1).all()\
                     and np.isclose(np.sum(proposed_weights), 1.0):
-                    previous_prob = beta * cur_gmm.log_likelihood(X, n_jobs) + prior.log_prob(cur_gmm)
+                    previous_prob = target.log_prob(X, cur_gmm, n_jobs)
                     proposed_gmm = GMM(np.array(cur_gmm.means), proposed_weights, np.array(cur_gmm.covars))
                     proposed_prob = target.log_prob(X, proposed_gmm, n_jobs)
                     ratio = proposed_prob - previous_prob

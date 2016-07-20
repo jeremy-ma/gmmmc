@@ -78,8 +78,8 @@ def evaluate_metropolis_hastings(n_mixtures=1, n_features=1, n_runs=10000):
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.INFO)
     evaluate_metropolis_hastings(n_mixtures=1, n_features=1, n_runs=20000)
-    # naive importance sampling
-    # profile distributions stuff
+    # naive importance gmmmc
+    # profile priors stuff
 
     # gamma distribution->prior for gammma
     # wishart distribution proposal for covariance

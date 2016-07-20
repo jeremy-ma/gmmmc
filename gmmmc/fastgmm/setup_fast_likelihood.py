@@ -16,8 +16,7 @@ ext_modules = [Extension("fast_likelihood",
                           language='c++')]
 
 setup(
-  name = 'MyHello',
+  name = 'fastgmm',
   cmdclass = {'build_ext': build_ext},
-
   ext_modules = ext_modules
 )
