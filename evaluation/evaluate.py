@@ -5,10 +5,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sklearn
 from scipy.misc import logsumexp
+import sys
+sys.path.append('/home/jeremy/Documents/gmmmc/')
 from gmmmc.priors import *
 from gmmmc.proposals import *
 from gmmmc import *
-#from gmmmc.monte_carlo import MarkovChain, AnnealedImportanceSampling
 
 
 def create_data(n_mixtures, n_features, n_samples):
@@ -19,10 +20,13 @@ def create_data(n_mixtures, n_features, n_samples):
 
     # draw samples from the true distribution
     X = truth_gmm.sample(n_samples)
-    with open('pickledgmm_n_mixtures{0}_n_features{1}'.format(n_mixtures, n_features),'w') as fp:
+    with open('/home/jeremy/Documents/gmmmc/evaluation/pickledgmm_n_mixtures{0}_n_features{1}'.format(n_mixtures, n_features),'w') as fp:
         cPickle.dump((truth_gmm, X), fp)
 
-
+def load_data(n_mixtures, n_features):
+    with open('/home/jeremy/Documents/gmmmc/evaluation/pickledgmm_n_mixtures{0}_n_features{1}'.format(n_mixtures, n_features)) as fp:
+        truth_gmm, X = cPickle.load(fp)
+    return (truth_gmm, X)
 
 def evaluate_mcmc( X, truth_gmm, n_mixtures, n_runs, n_jobs=1):
 
@@ -145,11 +149,6 @@ def evaluate_ais(X, truth_gmm, n_mixtures = 1,  n_samples = 10000, n_jobs=1):
     plt.scatter(truth_gmm.means[1], 2, color='green')
     plt.show()
 
-
-def load_data(n_mixtures, n_features):
-    with open('pickledgmm_n_mixtures{0}_n_features{1}'.format(n_mixtures, n_features)) as fp:
-        truth_gmm, X = cPickle.load(fp)
-    return (truth_gmm, X)
 
 if __name__=='__main__':
     logging.getLogger().setLevel(logging.INFO)

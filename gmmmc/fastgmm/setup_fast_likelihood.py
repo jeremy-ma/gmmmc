@@ -8,7 +8,7 @@ import os
 #os.environ["CXX"] = "clang-omp"
 
 sourcefiles = [ 'fast_likelihood_caller.pyx', 'fast_likelihood_threaded.cpp']
-ext_modules = [Extension("fast_likelihood",
+ext_modules = [Extension("fastgmm",
                           sourcefiles,
                           include_dirs = [np.get_include()],
                           extra_compile_args=['-O3', '-fopenmp', '-lc++'],

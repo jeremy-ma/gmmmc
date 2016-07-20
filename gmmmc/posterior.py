@@ -10,4 +10,4 @@ class GMMPosteriorTarget:
         self.beta = beta
 
     def log_prob(self, X, gmm, n_jobs):
-        return self.beta * gmm.log_likelihood(X) + self.prior.log_prob(gmm)
+        return self.beta * gmm.log_likelihood(X, n_jobs) + self.prior.log_prob(gmm, n_jobs)
