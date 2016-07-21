@@ -13,7 +13,7 @@ class TestGMMPrior(TestCase):
                               CovarsStaticPrior(self.covars), WeightsStaticPrior(self.weights))
 
     def test_log_prob_gaussian_means(self):
-        test_gmm = GMM(np.array([[4, 5], [5, 3]]), self.weights, self.covars)
+        test_gmm = GMM(np.array([[4, 5], [5, 3]]), self.covars, self.weights)
         test = self.prior.log_prob(test_gmm)
         real = -15.175754132818689
         self.assertAlmostEqual(test, real)

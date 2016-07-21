@@ -33,7 +33,7 @@ class GaussianStepMeansProposal(Proposal):
                 # try out the new means
                 proposed_means = np.array(new_means)
                 proposed_means[mixture] = new_mixture_means
-                proposed_gmm = GMM(proposed_means, np.array(gmm.weights), np.array(gmm.covars))
+                proposed_gmm = GMM(proposed_means, np.array(gmm.covars), np.array(gmm.weights))
 
                 # calculate new prior
                 new_log_prob_mixture = prior.means_prior.log_prob_single(new_mixture_means, mixture)
@@ -52,7 +52,7 @@ class GaussianStepMeansProposal(Proposal):
                     log_priors[mixture] = new_log_prob_mixture
                     self.count_accepted[i] += 1
 
-        return GMM(new_means, np.array(gmm.weights), np.array(gmm.covars))
+        return GMM(new_means, np.array(gmm.covars), np.array(gmm.weights))
 
 class GaussianStepCovarProposal(Proposal):
     def __init__(self, step_sizes=(0.001,)):
@@ -83,7 +83,7 @@ class GaussianStepCovarProposal(Proposal):
                     # try out the new covars
                     proposed_covars = np.array(new_covars)
                     proposed_covars[mixture] = new_mixture_covars
-                    proposed_gmm = GMM(np.array(gmm.means), np.array(gmm.weights), proposed_covars)
+                    proposed_gmm = GMM(np.array(gmm.means), proposed_covars, np.array(gmm.weights))
 
                     # calculate desired distribution
                     new_log_prob_mixture = prior.covars_prior.log_prob_single(new_mixture_covars, mixture)
@@ -102,7 +102,7 @@ class GaussianStepCovarProposal(Proposal):
                 else:
                     self.count_illegal[i] += 1
 
-        return GMM(np.array(gmm.means), np.array(gmm.weights), np.array(new_covars))
+        return GMM(np.array(gmm.means), np.array(new_covars), np.array(gmm.weights))
 
 class GaussianStepWeightsProposal(Proposal):
     def __init__(self,  n_mixtures, step_sizes=(0.001,)):
@@ -146,7 +146,7 @@ class GaussianStepWeightsProposal(Proposal):
                 if np.logical_and(0 <= proposed_weights, proposed_weights <= 1).all()\
                     and np.isclose(np.sum(proposed_weights), 1.0):
                     previous_prob = target.log_prob(X, cur_gmm, n_jobs)
-                    proposed_gmm = GMM(np.array(cur_gmm.means), proposed_weights, np.array(cur_gmm.covars))
+                    proposed_gmm = GMM(np.array(cur_gmm.means), np.array(cur_gmm.covars), proposed_weights)
                     proposed_prob = target.log_prob(X, proposed_gmm, n_jobs)
                     ratio = proposed_prob - previous_prob
                     if ratio > 0 or ratio > np.log(np.random.uniform()):
@@ -160,5 +160,5 @@ class GaussianStepWeightsProposal(Proposal):
         if accepted is True:
             return cur_gmm
         else:
-            return GMM(np.array(gmm.means), np.array(gmm.weights), np.array(gmm.covars))
+            return GMM(np.array(gmm.means), np.array(gmm.covars), np.array(gmm.weights))
 

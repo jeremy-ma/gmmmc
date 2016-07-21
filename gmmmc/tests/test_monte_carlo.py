@@ -16,8 +16,8 @@ class TestMarkovChain(TestCase):
         self.n_features = 4
         self.n_samples = 1000
         self.truth_gmm = GMM(means=np.random.uniform(low=-1, high=1, size=(self.n_mixtures, self.n_features)),
-                        weights=np.random.dirichlet(np.ones(self.n_mixtures)),
-                        covariances=np.random.uniform(low=0, high=1, size=(self.n_mixtures, self.n_features)))
+                             covariances=np.random.uniform(low=0, high=1, size=(self.n_mixtures, self.n_features)),
+                             weights=np.random.dirichlet(np.ones(self.n_mixtures)))
         # draw samples from the true distribution
         self.X = self.truth_gmm.sample(self.n_samples)
         logging.getLogger().setLevel(logging.INFO)
@@ -32,8 +32,7 @@ class TestMarkovChain(TestCase):
         target = GMMPosteriorTarget(prior)
         proposal = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(step_size=0.003))
         initial_gmm = GMM(means=np.random.uniform(low=-1, high=1, size=(self.n_mixtures, self.n_features)),
-                          weights=self.truth_gmm.weights,
-                          covariances=self.truth_gmm.covars)
+                          covariances=self.truth_gmm.covars, weights=self.truth_gmm.weights)
         mc = MarkovChain(proposal, target, initial_gmm)
         # make samples
         gmm_samples = mc.sample(self.X, n_samples=10000, n_jobs=-1)

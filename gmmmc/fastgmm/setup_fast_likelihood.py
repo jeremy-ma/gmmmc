@@ -4,9 +4,6 @@ from Cython.Distutils import build_ext
 import numpy as np
 import os
 
-#os.environ["CC"] = "clang-omp"
-#os.environ["CXX"] = "clang-omp"
-
 sourcefiles = [ 'fast_likelihood_caller.pyx', 'fast_likelihood_threaded.cpp']
 ext_modules = [Extension("fastgmm",
                           sourcefiles,

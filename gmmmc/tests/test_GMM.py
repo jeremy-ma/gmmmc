@@ -14,7 +14,7 @@ class TestGMM(TestCase):
         means = np.array(np.random.uniform(-1,1,size=(self.n_mixtures, self.n_features)), dtype=np.float64)
         weights = np.array(np.random.dirichlet([1 for _ in xrange(self.n_mixtures)]), dtype=np.float64)
         covars = np.array(np.random.uniform(0,1,size=(self.n_mixtures, self.n_features)), dtype=np.float64)
-        self.gmm = GMM(means, weights, covars, n_jobs=-1)
+        self.gmm = GMM(means, covars, weights, n_jobs=-1)
         self.true_gmm = sklearn.mixture.GMM(n_components=self.n_mixtures)
         self.true_gmm.means_ = means
         self.true_gmm.covars_ = covars
