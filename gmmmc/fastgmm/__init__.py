@@ -1,1 +1,1 @@
-from fastgmm import gmm_likelihood
+from fast_likelihood import gmm_likelihood

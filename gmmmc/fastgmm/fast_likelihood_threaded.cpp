@@ -57,7 +57,7 @@ double vec_logprob(double * __restrict data, double * __restrict means, double *
 }
 
 
-double data_logprob_threaded(double * __restrict data, double * __restrict means, double * __restrict covars,
+ double data_logprob_threaded(double * __restrict data, double * __restrict means, double * __restrict covars,
                     double * __restrict weights, int n_samples, int n_mixtures, int n_features, int n_threads)
 {
 	double * __restrict gconst; //pointer to store mixture normalising constants -  (2pi)^-D/2|mix cov|^-1/2

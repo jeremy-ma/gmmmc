@@ -2,8 +2,7 @@ import numpy as np
 cimport numpy as np
 cimport cython
 
-cdef extern from "fast_likelihood.h":
-    double f()
+cdef extern from "fast_likelihood_threaded.cpp":
     double data_logprob_threaded(double *data, double* means, double *covars, double * weights,
                         int n_samples, int n_mixtures, int n_features, int n_threads)
 
@@ -26,6 +25,3 @@ cpdef gmm_likelihood(np.ndarray[double, mode="c", ndim=2] X, np.ndarray[double, 
                 n_samples, n_mixtures, n_features, n_jobs)
 
     return prob
-
-def testing():
-    f()

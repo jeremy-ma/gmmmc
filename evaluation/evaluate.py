@@ -114,7 +114,7 @@ def evaluate_ais(X, truth_gmm, n_mixtures = 1,  n_samples = 10000, n_jobs=1):
 
     ################ ML Estimate #####################
 
-    gmm_ml = sklearn.mixture.GMM(n_components=n_mixtures, covariance_type='diag', n_iter=100000, n_init=100, tol=1e-5)
+    gmm_ml = sklearn.mixture.GMM(n_components=n_mixtures, covariance_type='diag', n_iter=100000, n_init=10, tol=1e-4, verbose=1)
     gmm_ml.fit(X)
 
     ################ AIS ####################################
@@ -156,6 +156,38 @@ def evaluate_ais(X, truth_gmm, n_mixtures = 1,  n_samples = 10000, n_jobs=1):
     logging.info('ML Likelihood:   {0}'.format(str(likelihood_ml)))
     logging.info('True Likelihood: {0}'.format(str(true_likelihood)))
 
+    return diagnostics
+
+
+def process_diagnostics(diagnostics):
+    beta_v_mean = []
+    beta_v_logweight = []
+    mean_v_logweight = []
+    beta_v_var_logweight = defaultdict(list)
+    ais_samples = []
+    weights = []
+    for sample_dict in diagnostics.values():
+        for i, beta in enumerate(sample_dict['intermediate_betas']):
+            if i % 5 != 0:
+                continue
+            beta_v_mean.append((beta, sample_dict['intermediate_samples'][i].means[0]))
+            beta_v_logweight.append((beta, sample_dict['intermediate_log_weights'][i]))
+        mean_v_logweight.append((sample_dict['final_sample'].means[0], sample_dict['final_weight']))
+        ais_samples.append(sample_dict['final_sample'])
+        weights.append(sample_dict['final_sample'])
+
+    for beta, logweight in beta_v_logweight:
+        beta_v_var_logweight[beta].append(logweight)
+
+    for beta, logweights in beta_v_var_logweight.iteritems():
+        beta_v_var_logweight[beta] = np.var(logweights)
+
+    beta_v_var_logweight = np.array([(beta, var) for beta, var in beta_v_var_logweight.iteritems()])
+
+    beta_v_mean = np.array(beta_v_mean)
+    beta_v_logweight = np.array(beta_v_logweight)
+    mean_v_logweight = np.array(mean_v_logweight)
+
 
     weights = np.array([sample.covars for sample in ais_samples])
     plt.figure(5)
@@ -179,7 +211,6 @@ def evaluate_ais(X, truth_gmm, n_mixtures = 1,  n_samples = 10000, n_jobs=1):
     plt.scatter(truth_gmm.covars[1], 2, color='green')
 
 
-
     plt.figure(0)
     plt.title('means')
     means = np.array([sample.means for sample in ais_samples])
@@ -191,35 +222,6 @@ def evaluate_ais(X, truth_gmm, n_mixtures = 1,  n_samples = 10000, n_jobs=1):
     plt.scatter(truth_gmm.means[1], 2, color='green')
 
     plt.draw()
-
-    return diagnostics
-
-
-def process_diagnostics(diagnostics):
-    beta_v_mean = []
-    beta_v_logweight = []
-    mean_v_logweight = []
-    beta_v_var_logweight = defaultdict(list)
-    for sample_dict in diagnostics.values():
-        for i, beta in enumerate(sample_dict['intermediate_betas']):
-            if i % 5 != 0:
-                continue
-            beta_v_mean.append((beta, sample_dict['intermediate_samples'][i].means[0]))
-            beta_v_logweight.append((beta, sample_dict['intermediate_log_weights'][i]))
-        mean_v_logweight.append((sample_dict['final_sample'].means[0], sample_dict['final_weight']))
-
-    for beta, logweight in beta_v_logweight:
-        beta_v_var_logweight[beta].append(logweight)
-
-    for beta, logweights in beta_v_var_logweight.iteritems():
-        beta_v_var_logweight[beta] = np.var(logweights)
-
-    beta_v_var_logweight = np.array([(beta, var) for beta, var in beta_v_var_logweight.iteritems()])
-
-    beta_v_mean = np.array(beta_v_mean)
-    beta_v_logweight = np.array(beta_v_logweight)
-    mean_v_logweight = np.array(mean_v_logweight)
-
 
     plt.figure(1)
     plt.title('beta v logweight')
@@ -245,21 +247,20 @@ def process_diagnostics(diagnostics):
 
 if __name__=='__main__':
     logging.getLogger().setLevel(logging.INFO)
-    #create_data(n_mixtures=2, n_features=1, n_samples=1000)
+    create_data(n_mixtures=16, n_features=64, n_samples=1000)
 
-    #truth_gmm, X = load_data(n_mixtures=2, n_features=1)
+    truth_gmm, X = load_data(n_mixtures=16, n_features=64)
 
-    np.random.seed(5)
-    truth_gmm = GMM(np.array([[0.0], [0.5]]), np.array([[0.01], [0.5]]), np.array([0.3, 0.7]))
-
-    X = truth_gmm.sample(1000)
+    #np.random.seed(5)
+    #truth_gmm = GMM(np.array([[0.0], [0.5]]), np.array([[0.01], [0.5]]), np.array([0.3, 0.7]))
+    #X = truth_gmm.sample(1000)
 
     #start = time.time()
     #evaluate_mcmc( X, truth_gmm, n_mixtures=2, n_runs=10000, n_jobs=-1)
     #print time.time() - start
 
     start = time.time()
-    diagnostics = evaluate_ais( X, truth_gmm, n_mixtures=2, n_samples=100, n_jobs=-1)
+    diagnostics = evaluate_ais( X, truth_gmm, n_mixtures=16, n_samples=10, n_jobs=-1)
     print time.time() - start
 
-    process_diagnostics(diagnostics)
+    #process_diagnostics(diagnostics)
