@@ -96,8 +96,6 @@ def evaluate_mcmc( X, truth_gmm, n_mixtures, n_runs, n_jobs=1):
     plt.scatter(truth_gmm.weights[1], 2, color='green')
 
 
-    """
-
     means = np.array([sample.means for sample in gmm_samples])
     plt.scatter(means[:, 0], np.ones(means.shape[0]), color = 'red')
     plt.scatter(means[:, 1], np.ones(means.shape[0]), color = 'black')
@@ -107,6 +105,7 @@ def evaluate_mcmc( X, truth_gmm, n_mixtures, n_runs, n_jobs=1):
     plt.scatter(truth_gmm.means[1], 2, color='green')
 
     plt.show()
+    """
 
 def evaluate_ais(X, truth_gmm, n_mixtures = 1,  n_samples = 10000, n_jobs=1):
 
@@ -256,7 +255,7 @@ if __name__=='__main__':
     #X = truth_gmm.sample(1000)
 
     start = time.time()
-    evaluate_mcmc( X, truth_gmm, n_mixtures=16, n_runs=1000, n_jobs=-1)
+    evaluate_mcmc( X, truth_gmm, n_mixtures=16, n_runs=100, n_jobs=-1)
     print time.time() - start
 
     #start = time.time()
