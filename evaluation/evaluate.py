@@ -22,11 +22,12 @@ def create_data(n_mixtures, n_features, n_samples):
 
     # draw samples from the true distribution
     X = truth_gmm.sample(n_samples)
-    with open('/home/jeremy/Documents/gmmmc/evaluation/pickledgmm_n_mixtures{0}_n_features{1}'.format(n_mixtures, n_features),'w') as fp:
-        cPickle.dump((truth_gmm, X), fp)
+    #with open('~/gmmmc/evaluation/pickledgmm_n_mixtures{0}_n_features{1}'.format(n_mixtures, n_features),'w') as fp:
+     #   cPickle.dump((truth_gmm, X), fp)
+    return (X, truth_gmm)
 
 def load_data(n_mixtures, n_features):
-    with open('/home/jeremy/Documents/gmmmc/evaluation/pickledgmm_n_mixtures{0}_n_features{1}'.format(n_mixtures, n_features)) as fp:
+    with open('~/gmmmc/evaluation/pickledgmm_n_mixtures{0}_n_features{1}'.format(n_mixtures, n_features)) as fp:
         truth_gmm, X = cPickle.load(fp)
     return (truth_gmm, X)
 
@@ -34,9 +35,9 @@ def evaluate_mcmc( X, truth_gmm, n_mixtures, n_runs, n_jobs=1):
 
     ################ ML Estimate #####################
 
-    gmm_ml = sklearn.mixture.GMM(n_components=n_mixtures, covariance_type='diag', n_iter=10000, n_init=100)
+    gmm_ml = sklearn.mixture.GMM(n_components=n_mixtures, covariance_type='diag', n_iter=10000)
     gmm_ml.fit(X)
-
+    print "finished ML fit"
     ########### MCMC ##################################
     # setup monte carlo sampler
     #pdb.set_trace()
@@ -55,10 +56,10 @@ def evaluate_mcmc( X, truth_gmm, n_mixtures, n_runs, n_jobs=1):
                      DiagCovarsUniformPrior(0.01, 1, n_mixtures, X.shape[1]),
                      WeightsUniformPrior(n_mixtures))
 
-    proposal = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(step_sizes=[0.01, 0.05]),
+    proposal = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(step_sizes=[0.01]),
                                           propose_covars=GaussianStepCovarProposal(step_sizes=[0.0001]),
                                           propose_weights=GaussianStepWeightsProposal(n_mixtures,
-                                                                                      step_sizes=[0.01, 0.1]))
+                                                                                      step_sizes=[0.0]))
 
     initial_gmm = GMM(means=gmm_ml.means_, covariances=gmm_ml.covars_, weights=gmm_ml.weights_)
 
@@ -247,20 +248,19 @@ def process_diagnostics(diagnostics):
 
 if __name__=='__main__':
     logging.getLogger().setLevel(logging.INFO)
-    create_data(n_mixtures=16, n_features=64, n_samples=1000)
-
-    truth_gmm, X = load_data(n_mixtures=16, n_features=64)
+    X, truth_gmm = create_data(n_mixtures=16, n_features=64, n_samples=2000)
+    #truth_gmm, X = load_data(n_mixtures=16, n_features=64)
 
     #np.random.seed(5)
     #truth_gmm = GMM(np.array([[0.0], [0.5]]), np.array([[0.01], [0.5]]), np.array([0.3, 0.7]))
     #X = truth_gmm.sample(1000)
 
-    #start = time.time()
-    #evaluate_mcmc( X, truth_gmm, n_mixtures=2, n_runs=10000, n_jobs=-1)
-    #print time.time() - start
-
     start = time.time()
-    diagnostics = evaluate_ais( X, truth_gmm, n_mixtures=16, n_samples=10, n_jobs=-1)
+    evaluate_mcmc( X, truth_gmm, n_mixtures=16, n_runs=1000, n_jobs=-1)
     print time.time() - start
+
+    #start = time.time()
+    #diagnostics = evaluate_ais( X, truth_gmm, n_mixtures=16, n_samples=10, n_jobs=-1)
+    #print time.time() - start
 
     #process_diagnostics(diagnostics)
