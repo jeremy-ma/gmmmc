@@ -1,10 +1,21 @@
 import numpy as np
 from gmmmc.gmm import GMM
 from gmmmc.proposals.proposals import Proposal
-
+import pdb
 
 class GaussianStepMeansProposal(Proposal):
+    """Gaussian Proposal distribution for means of a GMM"""
+
     def __init__(self, step_sizes=(0.001,)):
+        """
+        Gaussian proposal distribution for the means. The multivariate Gaussian is centered at the means of the current
+        state in the Markov Chain and has covariance given by step_sizes. Multiple step sizes can be specified.
+        The proposal algorithm will take these steps in the sequence specified in step_sizes.
+        Parameters
+        ----------
+        step_sizes : 1-D array_like
+            Iterable containing the sequence of step sizes (covariances of the Gaussian proposal distribution"
+        """
         super(GaussianStepMeansProposal, self).__init__()
         self.step_sizes = step_sizes
         self.count_accepted = np.zeros((len(step_sizes),))
@@ -12,6 +23,24 @@ class GaussianStepMeansProposal(Proposal):
         self.count_proposed = np.zeros((len(step_sizes),))
 
     def propose(self, X, gmm, target, n_jobs=1):
+        """
+        Propose a new set of GMM means.
+        Parameters
+        ----------
+        X : 2-D array like of shape (n_samples, n_features)
+            The observed data or evidence.
+        gmm : GMM object
+            The current state (set of gmm parameters) in the Markov Chain
+        target : GMMPosteriorTarget object
+            The target distribution to be found.
+        n_jobs : int
+            Number of cpu cores to use in the calculation of log probabilities.
+
+        Returns
+        -------
+            : GMM
+            A new GMM object initialised with new mean parameters.
+        """
         new_means = np.array(gmm.means)
         beta = target.beta
         prior = target.prior
@@ -42,6 +71,7 @@ class GaussianStepMeansProposal(Proposal):
                 # priors
                 proposed_prob = beta * proposed_gmm.log_likelihood(X, n_jobs) + new_log_prob_priors
                 # ratio
+
                 ratio = proposed_prob - previous_prob
                 if ratio > 0 or ratio > np.log(np.random.uniform()):
                     # accept proposal
@@ -55,7 +85,14 @@ class GaussianStepMeansProposal(Proposal):
         return GMM(new_means, np.array(gmm.covars), np.array(gmm.weights))
 
 class GaussianStepCovarProposal(Proposal):
+
     def __init__(self, step_sizes=(0.001,)):
+        """
+
+        Parameters
+        ----------
+        step_sizes
+        """
         super(GaussianStepCovarProposal, self).__init__()
         self.step_sizes = step_sizes
         self.count_accepted = np.zeros((len(step_sizes),))
@@ -134,7 +171,6 @@ class GaussianStepWeightsProposal(Proposal):
 
     def propose(self, X, gmm, target, n_jobs=1):
         accepted = False
-
         cur_gmm = gmm
         if gmm.n_mixtures > 1:
             for i, step_size in enumerate(self.step_sizes):

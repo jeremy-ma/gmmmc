@@ -56,10 +56,10 @@ def evaluate_mcmc( X, truth_gmm, n_mixtures, n_runs, n_jobs=1):
                      DiagCovarsUniformPrior(0.01, 1, n_mixtures, X.shape[1]),
                      WeightsUniformPrior(n_mixtures))
 
-    proposal = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(step_sizes=[0.01]),
-                                          propose_covars=GaussianStepCovarProposal(step_sizes=[0.0001]),
+    proposal = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(step_sizes=[0.0001]),
+                                          propose_covars=GaussianStepCovarProposal(step_sizes=[0.00001]),
                                           propose_weights=GaussianStepWeightsProposal(n_mixtures,
-                                                                                      step_sizes=[0.0]))
+                                                                                      step_sizes=[0.001]))
 
     initial_gmm = GMM(means=gmm_ml.means_, covariances=gmm_ml.covars_, weights=gmm_ml.weights_)
 
@@ -123,9 +123,9 @@ def evaluate_ais(X, truth_gmm, n_mixtures = 1,  n_samples = 10000, n_jobs=1):
                          MeansUniformPrior(-1,1,n_mixtures,X.shape[1]),
                          DiagCovarsUniformPrior(0.01,1,n_mixtures, X.shape[1]),
                          WeightsUniformPrior(n_mixtures))
-    proposal_ais = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(step_sizes=[0.05, 0.15]),
-                                              propose_covars=GaussianStepCovarProposal(step_sizes=[0.05]),
-                                              propose_weights=GaussianStepWeightsProposal(n_mixtures,step_sizes=[0.05]),
+    proposal_ais = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(step_sizes=[0.001]),
+                                              propose_covars=GaussianStepCovarProposal(step_sizes=[0.001]),
+                                              propose_weights=GaussianStepWeightsProposal(n_mixtures,step_sizes=[0.001]),
                                               propose_iterations=5)
     betas = [0.0]
     betas.extend(np.logspace(-2, 0, 100))
@@ -247,15 +247,21 @@ def process_diagnostics(diagnostics):
 
 if __name__=='__main__':
     logging.getLogger().setLevel(logging.INFO)
-    X, truth_gmm = create_data(n_mixtures=16, n_features=64, n_samples=2000)
+    X, truth_gmm = create_data(n_mixtures=128, n_features=64, n_samples=2000)
     #truth_gmm, X = load_data(n_mixtures=16, n_features=64)
 
     #np.random.seed(5)
     #truth_gmm = GMM(np.array([[0.0], [0.5]]), np.array([[0.01], [0.5]]), np.array([0.3, 0.7]))
-    #X = truth_gmm.sample(1000)
+    #X = truth_gmm.sample(1000)    #enrolment_data.append({'name': 'background', 'features': manager.get_background_data()})
+    #for el in enrolment_data:
+    #    prototype_montecarlo_system.save_enrolment_samples(el, save_path, 100, 8)
+    #pool = multiprocessing.Pool(1)
+    #map_function = partial(mcmc_system.save_enrolment_samples,
+    #                       save_path=save_path, n_runs=20000, n_mixtures=8)
+    #pool.map(map_function, enrolment_data)
 
     start = time.time()
-    evaluate_mcmc( X, truth_gmm, n_mixtures=16, n_runs=100, n_jobs=-1)
+    evaluate_mcmc( X, truth_gmm, n_mixtures=128, n_runs=100, n_jobs=-1)
     print time.time() - start
 
     #start = time.time()

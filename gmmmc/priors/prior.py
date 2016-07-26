@@ -1,8 +1,6 @@
 import abc
 import numpy as np
 import scipy.stats
-import xxhash
-from expiringdict import ExpiringDict
 from gmmmc import GMM
 
 class GMMPrior():
@@ -98,12 +96,11 @@ class MeansGaussianPrior(GMMParameterPrior):
         prior_means : 2-D array_like of shape (n_mixtures, n_features)
             Expected means for each mixture of the GMM
         covariances : 2-D array_like of shape (n_mixtures, n_features)
-            Covariances of the expected means of the GMM. Alters the 'width' of the prior.
+            Diagonal covariances of the expected means of the GMM. Alters the 'width' of the prior.
         """
         # shape should be (n_mixtures, n_features)
         self.means = prior_means
         self.covars = covariances
-        self.cache = ExpiringDict(max_len=1024, max_age_seconds=100)
         self.distributions = [scipy.stats.multivariate_normal(self.means[i], self.covars[i])\
                               for i in xrange(len(self.means))]
         try:
@@ -124,7 +121,9 @@ class MeansGaussianPrior(GMMParameterPrior):
         float
             Proportional to the log probability of the means of the GMM
         """
+        log_prob = np.sum([self.log_prob_single(means[i], i) for i in xrange(len(self.distributions))])
 
+        return log_prob
         log_prob = 0
         for i, normal in enumerate(self.distributions):
             hashval = xxhash.xxh32(means[i]).intdigest()
@@ -139,7 +138,6 @@ class MeansGaussianPrior(GMMParameterPrior):
                     self.cache[hashval] = (log_prob_mean, means[i])
             log_prob += log_prob_mean
 
-        return log_prob
 
     def log_prob_single(self, mean, mixture_num):
         """
