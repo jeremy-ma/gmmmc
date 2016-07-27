@@ -123,7 +123,7 @@ def evaluate_ais(X, truth_gmm, n_mixtures = 1,  n_samples = 10000, n_jobs=1):
                          MeansUniformPrior(-1,1,n_mixtures,X.shape[1]),
                          DiagCovarsUniformPrior(0.01,1,n_mixtures, X.shape[1]),
                          WeightsUniformPrior(n_mixtures))
-    proposal_ais = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(step_sizes=[0.001]),
+    proposal_ais = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(step_sizes=[0.005, 0.01, 0.1]),
                                               propose_covars=GaussianStepCovarProposal(step_sizes=[0.001]),
                                               propose_weights=GaussianStepWeightsProposal(n_mixtures,step_sizes=[0.001]),
                                               propose_iterations=5)
@@ -134,24 +134,24 @@ def evaluate_ais(X, truth_gmm, n_mixtures = 1,  n_samples = 10000, n_jobs=1):
 
     diagnostics = {}
 
-    ais_samples, logweights = ais_sampler.sample(X, n_samples, n_jobs, diagnostics)
+    ais_samples = ais_sampler.sample(X, n_samples, n_jobs, diagnostics)
 
     ##############################################
     test_samples = truth_gmm.sample(10)
 
     # calculate estimated likelihood with importance mean samples
-    numerator = [[logweights[i] + gmm.log_likelihood(np.array([sample])) for i, gmm in enumerate(ais_samples)] for sample in test_samples]
+    numerator = [[logweight + gmm.log_likelihood(np.array([sample])) for gmm, logweight in ais_samples] for sample in test_samples]
     numerator = np.array(numerator)
     numerator = logsumexp(numerator, axis=1)
-    denominator = logsumexp(logweights)
+    denominator = logsumexp([logweight for _, logweight in ais_samples])
     ais_likelihood = numerator - denominator
     ais_likelihood = [x for x in ais_likelihood]
     likelihood_ml = [np.sum(gmm_ml.score(np.array([sample]))) for sample in test_samples]
     true_likelihood = [truth_gmm.log_likelihood(np.array([sample]), n_jobs=-1) for sample in test_samples]
 
     logging.info('AIS Means Acceptance: {0}'.format(proposal_ais.propose_mean.get_acceptance()))
-    logging.info('AIS Covars Acceptance: {0}'.format(proposal_ais.propose_covars.get_acceptance()))
-    logging.info('AIS Weights Acceptance: {0}'.format(proposal_ais.propose_weights.get_acceptance()))
+    #logging.info('AIS Covars Acceptance: {0}'.format(proposal_ais.propose_covars.get_acceptance()))
+    #logging.info('AIS Weights Acceptance: {0}'.format(proposal_ais.propose_weights.get_acceptance()))
     logging.info('AIS Likelihood:  {0}'.format(str(ais_likelihood)))
     logging.info('ML Likelihood:   {0}'.format(str(likelihood_ml)))
     logging.info('True Likelihood: {0}'.format(str(true_likelihood)))
@@ -247,7 +247,7 @@ def process_diagnostics(diagnostics):
 
 if __name__=='__main__':
     logging.getLogger().setLevel(logging.INFO)
-    X, truth_gmm = create_data(n_mixtures=128, n_features=64, n_samples=2000)
+    X, truth_gmm = create_data(n_mixtures=8, n_features=60, n_samples=1000)
     #truth_gmm, X = load_data(n_mixtures=16, n_features=64)
 
     #np.random.seed(5)
@@ -260,12 +260,12 @@ if __name__=='__main__':
     #                       save_path=save_path, n_runs=20000, n_mixtures=8)
     #pool.map(map_function, enrolment_data)
 
-    start = time.time()
-    evaluate_mcmc( X, truth_gmm, n_mixtures=128, n_runs=100, n_jobs=-1)
-    print time.time() - start
-
     #start = time.time()
-    #diagnostics = evaluate_ais( X, truth_gmm, n_mixtures=16, n_samples=10, n_jobs=-1)
+    #evaluate_mcmc( X, truth_gmm, n_mixtures=128, n_runs=100, n_jobs=-1)
     #print time.time() - start
+
+    start = time.time()
+    diagnostics = evaluate_ais( X, truth_gmm, n_mixtures=8, n_samples=10, n_jobs=-1)
+    print time.time() - start
 
     #process_diagnostics(diagnostics)
