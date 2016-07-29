@@ -234,7 +234,48 @@ class MeansUniformPrior(GMMParameterPrior):
         return np.random.uniform(self.low, self.high, size=(self.n_mixtures, self.n_features))
 
 class MeansTPrior(GMMParameterPrior):
-    pass
+
+    def __init__(self, means, covars, degrees_freedom):
+        self.means = means
+        self.covars = covars
+        self.degrees_freedom = degrees_freedom
+
+    def log_prob(self, params):
+        pass
+
+    def log_prob_single(self, param, mixture_num):
+        pass
+
+    # written by Enzo Michelangeli, style changes by josef-pktd
+    # Student's T random variable
+    # https://github.com/statsmodels/statsmodels/blob/master/statsmodels/sandbox/distributions/multivariate.py
+    def sample(self):
+        '''
+        generate random variables of multivariate t distribution
+        Parameters
+        ----------
+        means : array_like
+            mean of random variable, length determines dimension of random variable
+        S : array_like
+            square array of covariance  matrix
+        df : int or float
+            degrees of freedom
+        n : int
+            number of observations, return random array will be (n, len(means))
+        Returns
+        -------
+        rvs : ndarray, (n, len(means))
+            each row is an independent draw of a multivariate t distributed
+            random variable
+        '''
+        means = np.asarray(self.means)
+        d = len(means)
+        if self.degrees_freedom == np.inf:
+            x = 1.
+        else:
+            x = np.random.chisquare(self.degrees_freedom, 1) / self.degrees_freedom
+        z = np.random.multivariate_normal(np.zeros(d), self.covars, (1,))
+        return means + z / np.sqrt(x)[:, None]  # same output format as random.multivariate_normal
 
 class DiagCovarsUniformPrior(GMMParameterPrior):
     def __init__(self, low, high, n_mixtures, n_features):

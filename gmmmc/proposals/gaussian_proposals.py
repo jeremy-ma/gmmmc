@@ -88,10 +88,11 @@ class GaussianStepCovarProposal(Proposal):
 
     def __init__(self, step_sizes=(0.001,)):
         """
-
+        Gaussian proposal function for the covariances of the GMM.
         Parameters
         ----------
-        step_sizes
+        step_sizes : array_like
+            Array of covariance values for the Gaussian proposal.
         """
         super(GaussianStepCovarProposal, self).__init__()
         self.step_sizes = step_sizes
@@ -100,6 +101,24 @@ class GaussianStepCovarProposal(Proposal):
         self.count_proposed = np.zeros((len(step_sizes),))
 
     def propose(self, X, gmm, target, n_jobs=1):
+        """
+        Propose a new set of GMM covariances (diagonal only).
+        Parameters
+        ----------
+        X : 2-D array like of shape (n_samples, n_features)
+            The observed data or evidence.
+        gmm : GMM object
+            The current state (set of gmm parameters) in the Markov Chain
+        target : GMMPosteriorTarget object
+            The target distribution to be found.
+        n_jobs : int
+            Number of cpu cores to use in the calculation of log probabilities.
+
+        Returns
+        -------
+            : GMM
+            A new GMM object initialised with new covariance parameters.
+        """
         new_covars = np.array(gmm.covars)
         beta = target.beta
         prior = target.prior
@@ -142,7 +161,22 @@ class GaussianStepCovarProposal(Proposal):
         return GMM(np.array(gmm.means), np.array(new_covars), np.array(gmm.weights))
 
 class GaussianStepWeightsProposal(Proposal):
+
     def __init__(self,  n_mixtures, step_sizes=(0.001,)):
+        """
+        Gaussian proposal function for the weights of a GMM.
+        Parameters
+        ----------
+        n_mixtures
+        step_sizes
+
+        Notes
+        ----------
+        The proposal function works by projecting the weight vector w onto the simplex defined by
+        w_1 + w_2 + ..... w_n = 1 , 0<=w_i<=1. The change of basis matrix is found by finding n-1 vectors lying on the plane
+        and using gramm schmidt to get an orthonormal basis. A Gaussian proposal function in (n-1)-d space is
+        used to find the next point on the simplex.
+        """
         super(GaussianStepWeightsProposal, self).__init__()
         self.step_sizes = step_sizes
         self.n_mixtures = n_mixtures
@@ -163,13 +197,54 @@ class GaussianStepWeightsProposal(Proposal):
             self.e, _ = np.linalg.qr(parallel)
 
     def transformSimplex(self, weights):
+        """
+        Project weight vector onto the normal simplex.
+        Parameters
+        ----------
+        weights : array_like of shape (n_mixtures,)
+            vector of weights for each gaussian component
+
+        Returns
+        -------
+            : array_like of shape (n_mixtures-1,)
+            vector of weights projected onto the simplex plane
+        """
         # project onto the simplex
         return np.dot(self.e.T, weights - self.plane_origin)
 
     def invTransformSimplex(self, simplex_coords):
+        """
+        Transforms a point on the simplex to the original vector space.
+        Parameters
+        ----------
+        simplex_coords : array_like of shape (n_mixtures - 1,)
+            Coordinates of a weight vector on the simplex.
+
+        Returns
+        -------
+            : array_like of shape(n_mixtures,)
+            vector of weights.
+        """
         return self.plane_origin + np.dot(self.e, simplex_coords)
 
     def propose(self, X, gmm, target, n_jobs=1):
+        """
+        Propose a new set of weight vectors.
+        Parameters
+        ----------
+        X : 2-D array like of shape (n_samples, n_features)
+            The observed data or evidence.
+        gmm : GMM object
+            The current state (set of gmm parameters) in the Markov Chain
+        target : GMMPosteriorTarget object
+            The target distribution to be found.
+        n_jobs : int
+            Number of cpu cores to use in the calculation of log probabilities.
+        Returns
+        -------
+            : GMM
+            A new GMM object initialised with new covariance parameters.
+        """
         accepted = False
         cur_gmm = gmm
         if gmm.n_mixtures > 1:
