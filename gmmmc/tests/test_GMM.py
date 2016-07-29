@@ -14,7 +14,7 @@ class TestGMM(TestCase):
         means = np.array(np.random.uniform(-1,1,size=(self.n_mixtures, self.n_features)), dtype=np.float64)
         weights = np.array(np.random.dirichlet([1 for _ in xrange(self.n_mixtures)]), dtype=np.float64)
         covars = np.array(np.random.uniform(0,1,size=(self.n_mixtures, self.n_features)), dtype=np.float64)
-        self.gmm = GMM(means, covars, weights, n_jobs=-1)
+        self.gmm = GMM(means, covars, weights)
         self.true_gmm = sklearn.mixture.GMM(n_components=self.n_mixtures)
         self.true_gmm.means_ = means
         self.true_gmm.covars_ = covars
@@ -26,10 +26,10 @@ class TestGMM(TestCase):
     def test_log_likelihood(self):
         data = np.array(np.random.uniform(-1, 1, (2, self.n_features)), dtype=np.float64)
         start = time.time()
-        mine = self.gmm.log_likelihood(data)
+        mine = self.gmm.log_likelihood(data, 1)
         print time.time() - start
         start = time.time()
-        sklearns = np.sum(self.true_gmm.score(data))
+        sklearns = np.sum(self.true_gmm.score(data)) / 2
         print time.time() - start
         self.assertAlmostEqual(mine, sklearns)
 
@@ -40,11 +40,11 @@ class TestGMM(TestCase):
         for n_samples in suite:
             data = np.array(np.random.uniform(-1, 1, (n_samples, self.n_features)), dtype=np.float64)
             start = time.time()
-            mine = self.gmm.log_likelihood(data)
+            mine = self.gmm.log_likelihood(data, -1)
             finish_C = time.time() - start
             store_C.append(str(finish_C))
             start = time.time()
-            sklearns = np.sum(self.true_gmm.score(data))
+            sklearns = np.sum(self.true_gmm.score(data)) / n_samples
             finish_sklearn = time.time() - start
             store_sklearn.append(str(finish_sklearn))
             self.assertAlmostEqual(mine, sklearns, places=3)

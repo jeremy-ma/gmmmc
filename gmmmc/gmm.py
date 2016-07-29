@@ -80,7 +80,7 @@ class GMM():
 
     def log_likelihood(self, X, n_jobs=1):
         """
-        Calculate the log likelihood of the data given the GMM parameters
+        Calculate the average log likelihood of the data given the GMM parameters
         Parameters
         ----------
         X : 2-D array_like of shape (n_samples, n_features)
@@ -91,13 +91,13 @@ class GMM():
         Returns
         -------
             : float
-            log likelihood of the data given the GMM parameters
+            average log likelihood of the data given the GMM parameters
 
         Notes
         -------
         For GMMs with small numbers of mixtures (<10) the use of more than 1 core can slow down the function.
         """
-
+        n_samples = X.shape[0]
         if n_jobs == 0:
             raise ValueError("n_jobs==0 has no meaning")
         elif n_jobs < 0:
@@ -107,8 +107,8 @@ class GMM():
 
         if n_jobs == 1:
             # Use the sklearn/numpy implementation
-            return np.sum(self.gmm.score(X))
+            return np.sum(self.gmm.score(X)) / n_samples
         else:
             # Sse compiled multireaded C code
-            return gmm_likelihood(X, self.means, self.covars, self.weights, n_jobs=n_jobs)
+            return gmm_likelihood(X, self.means, self.covars, self.weights, n_jobs=n_jobs) / n_samples
 
