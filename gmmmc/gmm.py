@@ -107,8 +107,8 @@ class GMM():
 
         if n_jobs == 1:
             # Use the sklearn/numpy implementation
-            return np.sum(self.gmm.score(X)) / n_samples
+            return np.sum(self.gmm.score(X))
         else:
             # Sse compiled multireaded C code
-            return gmm_likelihood(X, self.means, self.covars, self.weights, n_jobs=n_jobs) / n_samples
+            return gmm_likelihood(X, self.means, self.covars, self.weights, n_jobs=n_jobs)
 
