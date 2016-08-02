@@ -14,7 +14,7 @@ ext_modules = [Extension("fast_likelihood",
 # ,'./gmmmc/fastgmm/fast_likelihood_threaded.cpp'
 setup(
     name='gmmmc',
-    version='0.2.1.4',
+    version='0.2.1.5',
     packages=['gmmmc', 'gmmmc.tests', 'gmmmc.priors', 'gmmmc.fastgmm', 'gmmmc.proposals'],
     url='',
     license='',

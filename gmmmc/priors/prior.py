@@ -102,7 +102,7 @@ class MeansGaussianPrior(GMMParameterPrior):
         self.means = prior_means
         self.covars = covariances
         self.distributions = [scipy.stats.multivariate_normal(self.means[i], self.covars[i])\
-                              for i in xrange(len(self.means))]
+                              for i in xrange(self.means.shape[0])]
         try:
             self.n_features = prior_means.shape[1]
         except:
@@ -124,20 +124,6 @@ class MeansGaussianPrior(GMMParameterPrior):
         log_prob = np.sum([self.log_prob_single(means[i], i) for i in xrange(len(self.distributions))])
 
         return log_prob
-        log_prob = 0
-        for i, normal in enumerate(self.distributions):
-            hashval = xxhash.xxh32(means[i]).intdigest()
-            result = self.cache.get(hashval)
-            if result is None:
-                log_prob_mean = self.log_prob_single(means[i], i)
-                self.cache[hashval] = (log_prob_mean, means[i])
-            else:
-                log_prob_mean, mean = result
-                if not np.array_equal(mean, means[i]):
-                    log_prob_mean = self.log_prob_single(means[i], i)
-                    self.cache[hashval] = (log_prob_mean, means[i])
-            log_prob += log_prob_mean
-
 
     def log_prob_single(self, mean, mixture_num):
         """
