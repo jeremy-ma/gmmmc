@@ -7,6 +7,7 @@ class GMMPrior():
     def __init__(self, means_prior, covars_prior, weights_prior):
         """
         Containing class for the priors of a GMM. Initialised with priors of means, weights & covariances.
+
         Parameters
         ----------
         means_prior : GMMParameterPrior
@@ -30,7 +31,7 @@ class GMMPrior():
 
         Returns
         -------
-            : float
+            : double
             log prior probability of the parameters of the input GMM
         """
 
@@ -43,6 +44,7 @@ class GMMPrior():
     def sample(self):
         """
         Compute a sample from the prior distribution of the GMM's parameters.
+
         Returns
         -------
             : GMM
@@ -56,6 +58,7 @@ class GMMParameterPrior:
     def log_prob(self, params):
         """
         Calculate the log prior probability.
+
         Parameters
         ----------
         params : array_like of varying shape
@@ -63,7 +66,7 @@ class GMMParameterPrior:
 
         Returns
         -------
-            : float
+            : double
             log prior probability of the parameters
 
         """
@@ -73,6 +76,7 @@ class GMMParameterPrior:
     def log_prob_single(self, param, mixture_num):
         """
         Compute log probability of a single set of parameters (mean/covariance/weight) vector
+
         Parameters
         ----------
         param : 1-D array_like vector of parameters for a single mixture
@@ -80,7 +84,7 @@ class GMMParameterPrior:
 
         Returns
         -------
-            : float
+            : double
             log prior probability of parameters
         """
 
@@ -89,8 +93,9 @@ class GMMParameterPrior:
 class MeansGaussianPrior(GMMParameterPrior):
     def __init__(self, prior_means, covariances):
         """
-        Multivariate Gaussian prior distribution for GMM means. Each mean vector for the means has its own Gaussian prior.
-        Diagonal covariances for the means.
+        Multivariate Gaussian prior distribution for GMM means.
+        Each mean vector for the means has its own Gaussian prior. Diagonal covariances for the means.
+
         Parameters
         ----------
         prior_means : 2-D array_like of shape (n_mixtures, n_features)
@@ -109,8 +114,8 @@ class MeansGaussianPrior(GMMParameterPrior):
             raise ValueError("Means must be 2d")
 
     def log_prob(self, means):
-        """
-        Compute the log prior probability of the means of a GMM according to Gaussian priors.
+        """Compute the log prior probability of the means of a GMM according to Gaussian priors.
+
         Parameters
         ----------
         means : 2-D array_like, of shape (n_mixtures, n_features)
@@ -118,7 +123,7 @@ class MeansGaussianPrior(GMMParameterPrior):
 
         Returns
         -------
-        float
+            : double
             Proportional to the log probability of the means of the GMM
         """
         log_prob = np.sum([self.log_prob_single(means[i], i) for i in xrange(len(self.distributions))])
@@ -126,17 +131,18 @@ class MeansGaussianPrior(GMMParameterPrior):
         return log_prob
 
     def log_prob_single(self, mean, mixture_num):
-        """
-        Compute the log probability of the means for a specific mixture.
+        """Compute the log probability of the means for a specific mixture.
+
         Parameters
         ----------
         mean : 1-D array_like of length n_features
             Single mean vector from a single mixture of the GMM.
         mixture_num : int
             Index of the mixture for the mean.
+
         Returns
         -------
-        float
+            : double
             Proportional to the log prior probability for means
         """
 
@@ -145,6 +151,7 @@ class MeansGaussianPrior(GMMParameterPrior):
     def sample(self):
         """
         Draw a sample from the Gaussian prior distributions of the mean vectors.
+
         Returns
         -------
             : 2-D array_like of shape (n_mixtures, n_features)
@@ -156,11 +163,12 @@ class MeansUniformPrior(GMMParameterPrior):
     def __init__(self, low, high, n_mixtures, n_features):
         """
         Uniform prior for the means of a GMM.
+
         Parameters
         ----------
-        low : float
+        low : double
             Upper limit for uniform distribution.
-        high : float
+        high : double
             Lower limit for uniform distribution.
         n_mixtures : int
             Number of mixtures in GMM.
@@ -177,6 +185,7 @@ class MeansUniformPrior(GMMParameterPrior):
         Compute the log prior probability of the means of a GMM. Since this will be used for monte carlo simulations,
         we care only that it is proportional to the true probability. For a uniform distribution we can
         use any value.
+
         Parameters
         ----------
         means : 2-D array_like, of shape (n_mixtures, n_features)
@@ -184,7 +193,7 @@ class MeansUniformPrior(GMMParameterPrior):
 
         Returns
         -------
-        float
+            : double
             Proportional to the log probability of the means of the GMM.
             0.0 if the means are within the bounds of the uniform prior, -inf otherwise.
         """
@@ -197,15 +206,17 @@ class MeansUniformPrior(GMMParameterPrior):
     def log_prob_single(self, mean, mixture):
         """
         Compute the log probability of the means for a specific mixture.
+
         Parameters
         ----------
         mean : 1-D array_like of length n_features
             Single mean vector from a single mixture of the GMM.
         mixture_num : int
             Index of the mixture for the mean.
+
         Returns
         -------
-        float
+            : double
             Proportional to the log prior probability for means
             0.0 if the means are within the bounds of the uniform prior, -inf otherwise.
         """
@@ -219,59 +230,16 @@ class MeansUniformPrior(GMMParameterPrior):
         # sample means
         return np.random.uniform(self.low, self.high, size=(self.n_mixtures, self.n_features))
 
-class MeansTPrior(GMMParameterPrior):
-
-    def __init__(self, means, covars, degrees_freedom):
-        self.means = means
-        self.covars = covars
-        self.degrees_freedom = degrees_freedom
-
-    def log_prob(self, params):
-        pass
-
-    def log_prob_single(self, param, mixture_num):
-        pass
-
-    # written by Enzo Michelangeli, style changes by josef-pktd
-    # Student's T random variable
-    # https://github.com/statsmodels/statsmodels/blob/master/statsmodels/sandbox/distributions/multivariate.py
-    def sample(self):
-        '''
-        generate random variables of multivariate t distribution
-        Parameters
-        ----------
-        means : array_like
-            mean of random variable, length determines dimension of random variable
-        S : array_like
-            square array of covariance  matrix
-        df : int or float
-            degrees of freedom
-        n : int
-            number of observations, return random array will be (n, len(means))
-        Returns
-        -------
-        rvs : ndarray, (n, len(means))
-            each row is an independent draw of a multivariate t distributed
-            random variable
-        '''
-        means = np.asarray(self.means)
-        d = len(means)
-        if self.degrees_freedom == np.inf:
-            x = 1.
-        else:
-            x = np.random.chisquare(self.degrees_freedom, 1) / self.degrees_freedom
-        z = np.random.multivariate_normal(np.zeros(d), self.covars, (1,))
-        return means + z / np.sqrt(x)[:, None]  # same output format as random.multivariate_normal
-
 class DiagCovarsUniformPrior(GMMParameterPrior):
     def __init__(self, low, high, n_mixtures, n_features):
         """
         Uniform prior for a diagonal covariance matrix in a GMM.
+
         Parameters
         ----------
-        low : float
+        low : double
             Lower limit for uniform distribution. Must be greater than 0.
-        high : float
+        high : double
             Upper limit for uniform distribution.
         n_mixtures : int
             Number of mixtures in GMM.
@@ -288,13 +256,15 @@ class DiagCovarsUniformPrior(GMMParameterPrior):
         Compute the log prior probability of the covariances of a GMM.
         Since this will be used for monte carlo simulations, we care only that it is proportional to
         the true probability. For a uniform distribution we can use any value.
+
         Parameters
         ----------
         covars : 2-D array_like, of shape (n_mixtures, n_features)
             covariance vectors for the GMM
+
         Returns
         -------
-        float
+            : double
             Proportional to the log probability of the covariance of the GMM.
             0.0 if the means are within the bounds of the uniform prior, -inf otherwise.eans
         """
@@ -308,15 +278,17 @@ class DiagCovarsUniformPrior(GMMParameterPrior):
     def log_prob_single(self, covar, mixture_num):
         """
         Compute the log probability of the covariances for a specific mixture.
+
         Parameters
         ----------
         covar : 1-D array_like of length n_features
             Single diagonal covariance from a single mixture of the GMM.
         mixture_num : int
             Index of the mixture for the covariance matrix.
+
         Returns
         -------
-        float
+        double
             Proportional to the log prior probability for the covariance.
             0.0 if the means are wimeansthin the bounds of the uniform prior, -inf otherwise.
         """
@@ -329,6 +301,7 @@ class DiagCovarsUniformPrior(GMMParameterPrior):
     def sample(self):
         """
         Draw a sample for the diagonals of a covariance matrix assuming a uniform prior over each individual element.
+
         Returns
         -------
             : 2-D array_like of shape (n_mixtures, n_features)
@@ -336,25 +309,12 @@ class DiagCovarsUniformPrior(GMMParameterPrior):
         """
         return np.random.uniform(self.low, self.high, size=(self.n_mixtures, self.n_features))
 
-class CovarsInvWishartPrior(GMMParameterPrior):
-    """Inverse Wishart Prior for covariance matrix"""
-    def __init__(self, degrees_freedom, scale):
-        self.df = degrees_freedom
-        self.scale = scale
-        self.distribution = scipy.stats.invWishart(df=self.df, scale=self.scale)
-
-    def log_prob(self, covariances):
-        raise NotImplementedError()
-
-    def log_prob_single(self, param, mixture_num):
-        raise NotImplementedError()
-
-
 class CovarsStaticPrior(GMMParameterPrior):
     def __init__(self, prior_covars):
         """
         Prior for covariance assuming that we know its true value.
         i.e a probability of 1 at prior_covars and 0 otherwise.
+
         Parameters
         ----------
         prior_covars : 2-D array_like of shape (n_mixtures, n_features)
@@ -365,13 +325,14 @@ class CovarsStaticPrior(GMMParameterPrior):
     def log_prob(self, covariances):
         """
         Log probability of a covariance given we know what its true value 'should' be.
+
         Parameters
         ----------
         covariances : covariance matrices of GMM distribution
 
         Returns
         -------
-            : float
+            : double
             0 if covariances are identical to their true values, -inf otherwise.
         """
         # assign probability of 1 to the static covariance prior
@@ -383,6 +344,7 @@ class CovarsStaticPrior(GMMParameterPrior):
     def log_prob_single(self, covariance, mixture_num):
         """
         Log probability of a covariance matrix of a single mixture given we know what its true value should be.
+
         Parameters
         ----------
         covariance : 1-D array_like of shape (n_features)
@@ -392,7 +354,7 @@ class CovarsStaticPrior(GMMParameterPrior):
 
         Returns
         -------
-            : float
+            : double
             0 if covariance is identical to its true value, -inf otherwise
         """
         if np.allclose(self.prior_covars[mixture_num], covariance):
@@ -407,6 +369,7 @@ class WeightsUniformPrior(GMMParameterPrior):
     def __init__(self, n_mixtures):
         """
         Uniform Prior for Weights (Dirichlet distribution with all parameters equal to 1)
+
         Parameters
         ----------
         n_mixtures : int
@@ -419,13 +382,15 @@ class WeightsUniformPrior(GMMParameterPrior):
     def log_prob(self, weights):
         """
         Returns a log probability according to uniform dirichlet prior.
+
         Parameters
         ----------
         weights : 1-D array_like of shape (n_mixtures)
             Weight vector for mixture. Must lie on the normal simplex.
+
         Returns
         -------
-            : float
+            : double
             log probability under uniform prior.
         """
         return self.dirichlet.logpdf(weights)
@@ -433,6 +398,7 @@ class WeightsUniformPrior(GMMParameterPrior):
     def log_prob_single(self, weights, mixture_num):
         """
         Functionally the same as log_prob
+
         Parameters
         ----------
         weights : 1-D array_like of shape (n_mixtures)
@@ -441,7 +407,7 @@ class WeightsUniformPrior(GMMParameterPrior):
 
         Returns
         -------
-            : float
+            : double
             log probability under uniform prior.
         """
         return self.dirichlet.logpdf(weights)
@@ -449,6 +415,7 @@ class WeightsUniformPrior(GMMParameterPrior):
     def sample(self):
         """
         Draw sample from dirichlet distribution
+
         Returns
         -------
             : 1-D array_like of shape (n_mixtures)
@@ -460,6 +427,7 @@ class WeightsStaticPrior(GMMParameterPrior):
     def __init__(self, prior_weights):
         """
         Prior for Weights  assuming it has a true fixed value.
+
         Parameters
         ----------
         n_mixtures : int
@@ -470,13 +438,15 @@ class WeightsStaticPrior(GMMParameterPrior):
     def log_prob(self, weights):
         """
         Returns a log probability assuming weights have a true fixed value.
+
         Parameters
         ----------
         weights : 1-D array_like of shape (n_mixtures)
             Weight vector for mixture. Must lie on the normal simplex.
+
         Returns
         -------
-            : float
+            : double
             0 if weights are close to true values, -inf otherwise
         """
         if np.all(np.isclose(weights, self.prior_weights)):
@@ -487,6 +457,7 @@ class WeightsStaticPrior(GMMParameterPrior):
     def log_prob_single(self, weights, mixture_num):
         """
         Functionally the same as log_prob
+
         Parameters
         ----------
         weights : 1-D array_like of shape (n_mixtures)
@@ -496,7 +467,7 @@ class WeightsStaticPrior(GMMParameterPrior):
 
         Returns
         -------
-            : float
+            : double
             0 if weights are close to true values, -inf otherwise
         """
         return self.log_prob(weights)
@@ -504,6 +475,7 @@ class WeightsStaticPrior(GMMParameterPrior):
     def sample(self):
         """
         Sample true weight vector
+
         Returns
         -------
             : 1-D array_like with shape (n_mixtures)
@@ -515,6 +487,7 @@ class WeightsDirichletPrior(GMMParameterPrior):
     def __init__(self, alpha):
         """
         Dirichlet prior for the weights of a GMM
+
         Parameters
         ----------
         alpha : 1-D array_like of shape (n_mixtures)
@@ -529,13 +502,14 @@ class WeightsDirichletPrior(GMMParameterPrior):
     def log_prob(self, weights):
         """
         Calculate log probability of weight vector according to dirichlet prior.
+
         Parameters
         ----------
         weights : 1-D array_like of shape (n_mixtures)
 
         Returns
         -------
-            : float
+            : double
             log probability under distribution
         """
         return scipy.stats.dirichlet.logpdf(weights, self.alpha)
@@ -543,6 +517,7 @@ class WeightsDirichletPrior(GMMParameterPrior):
     def log_prob_single(self, weights, mixture_num):
         """
         Identical to log_prob
+
         Parameters
         ----------
         weights : 1-D array_like of shape (n_mixtures)
@@ -550,7 +525,7 @@ class WeightsDirichletPrior(GMMParameterPrior):
 
         Returns
         -------
-            : float
+            : double
             log probability under distribution
         """
         return self.log_prob(weights)
@@ -558,6 +533,7 @@ class WeightsDirichletPrior(GMMParameterPrior):
     def sample(self):
         """
         Sample from dirichlet distribution.
+
         Returns
         -------
             : 1-D array like of shape (n_mixtures)

@@ -1,3 +1,3 @@
 from .prior import MeansGaussianPrior, MeansUniformPrior, CovarsStaticPrior, \
-                   CovarsInvWishartPrior, DiagCovarsUniformPrior, WeightsUniformPrior,\
+                   DiagCovarsUniformPrior, WeightsUniformPrior,\
                    WeightsDirichletPrior, WeightsStaticPrior, GMMPrior

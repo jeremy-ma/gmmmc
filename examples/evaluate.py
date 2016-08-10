@@ -23,7 +23,7 @@ def create_data(n_mixtures, n_features, n_samples):
     # draw samples from the true distribution
     X = truth_gmm.sample(n_samples)
     #with open('~/gmmmc/evaluation/pickledgmm_n_mixtures{0}_n_features{1}'.format(n_mixtures, n_features),'w') as fp:
-     #   cPickle.dump((truth_gmm, X), fp)
+     #   cPickle.dump((trutsh_gmm, X), fp)
     return (X, truth_gmm)
 
 def load_data(n_mixtures, n_features):
@@ -34,7 +34,6 @@ def load_data(n_mixtures, n_features):
 def evaluate_mcmc( X, truth_gmm, n_mixtures, n_runs, n_jobs=1):
 
     ################ ML Estimate #####################
-
     gmm_ml = sklearn.mixture.GMM(n_components=n_mixtures, covariance_type='diag', n_iter=10000)
     gmm_ml.fit(X)
     print "finished ML fit"

@@ -3,18 +3,12 @@ import sklearn.mixture
 from gmmmc.fastgmm import gmm_likelihood
 import multiprocessing
 
-def create_gmm(n_components, means, covariances, weights):
-    gmm = sklearn.mixture.GMM(n_components)
-    gmm.weights_ = weights
-    gmm.covars_ = covariances
-    gmm.means_ = means
-    return gmm
-
 class GMM():
 
     def __init__(self, means, covariances, weights):
         """
         Gaussian Mixture Model Distribution class for calculation of log likelihood and sampling.
+
         Parameters
         ----------
         means : 2-D array_like of shape (n_mixtures, n_features)
@@ -66,6 +60,7 @@ class GMM():
     def sample(self, n_samples):
         """
         Sample from the GMM.
+
         Parameters
         ----------
         n_samples : int
@@ -81,6 +76,7 @@ class GMM():
     def log_likelihood(self, X, n_jobs=1):
         """
         Calculate the average log likelihood of the data given the GMM parameters
+
         Parameters
         ----------
         X : 2-D array_like of shape (n_samples, n_features)
