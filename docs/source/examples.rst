@@ -93,23 +93,25 @@ We can plot and visualise the samples of the monte carlo sampler relative to the
 Note that most of the monte carlo samples are clustered around two areas. These represent the different modes of the
 distribution.
 
-mc_means = [[s.means[0][0], s.means[1][0]] for s in samples[::10]]
-mc_means = np.array(mc_means)
+.. code-block:: python
 
-mcmc = plt.scatter(mc_means[:,0], mc_means[:,1], color= 'b')
-true = plt.scatter(data_means[0][0], data_means[1][0], color='g', s=500)
-prior = plt.scatter(prior_means[0][0], prior_means[1][0], color= 'y', s=500)
-plt.title('Samples from Posterior Distribution of GMM Means', fontsize=22)
-plt.xlabel('Mixture 1 mean', fontsize=22)
-plt.ylabel('Mixture 2 mean', fontsize=22)
+    mc_means = [[s.means[0][0], s.means[1][0]] for s in samples[::10]]
+    mc_means = np.array(mc_means)
 
-plt.legend((mcmc, prior, true),
-           ('Monte Carlo Samples', 'Prior Means', 'Data Means'),
-           scatterpoints=1,
-           loc='lower left',
-           ncol=2,
-           fontsize=22)
+    mcmc = plt.scatter(mc_means[:,0], mc_means[:,1], color= 'b')
+    true = plt.scatter(data_means[0][0], data_means[1][0], color='g', s=500)
+    prior = plt.scatter(prior_means[0][0], prior_means[1][0], color= 'y', s=500)
+    plt.title('Samples from Posterior Distribution of GMM Means', fontsize=22)
+    plt.xlabel('Mixture 1 mean', fontsize=22)
+    plt.ylabel('Mixture 2 mean', fontsize=22)
 
-plt.show()
+    plt.legend((mcmc, prior, true),
+               ('Monte Carlo Samples', 'Prior Means', 'Data Means'),
+               scatterpoints=1,
+               loc='lower left',
+               ncol=2,
+               fontsize=22)
+
+    plt.show()
 
 .. image:: example.png
