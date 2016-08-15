@@ -6,6 +6,7 @@ from scipy.misc import logsumexp
 from gmmmc.priors.prior import *
 from gmmmc.monte_carlo import MarkovChain
 from gmmmc.posterior import GMMPosteriorTarget
+from gmmmc.proposals import *
 
 
 class TestMarkovChain(TestCase):
