@@ -8,11 +8,6 @@ class MonteCarloBase:
 
     @abc.abstractmethod
     def sample(self, X, n_samples):
-        """
-        Start the GMM Monte Carlo Sampler
-        :param n_samples:
-        :return: list of GMM parameter samples
-        """
         return
 
 class MarkovChain(MonteCarloBase):
@@ -20,6 +15,7 @@ class MarkovChain(MonteCarloBase):
     def __init__(self, proposal, prior, initial_gmm):
         """
         Base algorithm for Markov Chain Monte Carlo
+
         Parameters
         ----------
         proposal : Proposal Object
@@ -36,6 +32,7 @@ class MarkovChain(MonteCarloBase):
     def sample(self, X, n_samples, n_jobs=1):
         """
         Sample from the posterior distribution of the GMM parameters
+
         Parameters
         ----------
         X : 2-D array_like of shape (n_feature_vectors, n_features)
@@ -67,6 +64,7 @@ class AnnealedImportanceSampling(MonteCarloBase):
     def __init__(self, proposal, priors, betas):
         """
         Base algorithm for Annealed Importance Sampling.
+
         Parameters
         ----------
         proposal : Proposal Object
@@ -88,6 +86,7 @@ class AnnealedImportanceSampling(MonteCarloBase):
     def sample(self, X, n_samples, n_jobs=1, diagnostics=None):
         """
         Generate samples from the posterior distribution of the parameters.
+
         Parameters
         ----------
         X : 2-D array_like of shape (n_feature_vectors, n_features)
@@ -120,6 +119,7 @@ class AnnealedImportanceSampling(MonteCarloBase):
     def anneal(self, X, n_jobs, diagnostics=None):
         """
         A single annealing run from AIS.
+
         Parameters
         ----------
         X : 2-D array_like of shape (n_feature_vectors, n_features)
@@ -142,7 +142,6 @@ class AnnealedImportanceSampling(MonteCarloBase):
             # skip first T_n (prior only) and last transition T_0 (posterior) (not necessary)
             samples.append(cur_gmm)
             cur_gmm = self.proposal.propose(X, cur_gmm, target, n_jobs)
-            logging.info('Beta:{0}'.format(target.beta))
 
         samples.append(cur_gmm)
 

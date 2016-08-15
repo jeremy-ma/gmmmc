@@ -11,6 +11,7 @@ class GaussianStepMeansProposal(Proposal):
         Gaussian proposal distribution for the means. The multivariate Gaussian is centered at the means of the current
         state in the Markov Chain and has covariance given by step_sizes. Multiple step sizes can be specified.
         The proposal algorithm will take these steps in the sequence specified in step_sizes.
+
         Parameters
         ----------
         step_sizes : 1-D array_like
@@ -25,6 +26,7 @@ class GaussianStepMeansProposal(Proposal):
     def propose(self, X, gmm, target, n_jobs=1):
         """
         Propose a new set of GMM means.
+
         Parameters
         ----------
         X : 2-D array like of shape (n_samples, n_features)
@@ -89,6 +91,7 @@ class GaussianStepCovarProposal(Proposal):
     def __init__(self, step_sizes=(0.001,)):
         """
         Gaussian proposal function for the covariances of the GMM.
+
         Parameters
         ----------
         step_sizes : array_like
@@ -103,6 +106,7 @@ class GaussianStepCovarProposal(Proposal):
     def propose(self, X, gmm, target, n_jobs=1):
         """
         Propose a new set of GMM covariances (diagonal only).
+
         Parameters
         ----------
         X : 2-D array like of shape (n_samples, n_features)
@@ -165,6 +169,7 @@ class GaussianStepWeightsProposal(Proposal):
     def __init__(self,  n_mixtures, step_sizes=(0.001,)):
         """
         Gaussian proposal function for the weights of a GMM.
+
         Parameters
         ----------
         n_mixtures
@@ -199,6 +204,7 @@ class GaussianStepWeightsProposal(Proposal):
     def transformSimplex(self, weights):
         """
         Project weight vector onto the normal simplex.
+
         Parameters
         ----------
         weights : array_like of shape (n_mixtures,)
@@ -215,6 +221,7 @@ class GaussianStepWeightsProposal(Proposal):
     def invTransformSimplex(self, simplex_coords):
         """
         Transforms a point on the simplex to the original vector space.
+
         Parameters
         ----------
         simplex_coords : array_like of shape (n_mixtures - 1,)

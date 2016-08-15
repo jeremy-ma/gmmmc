@@ -4,6 +4,7 @@ class GMMPosteriorTarget:
     def __init__(self, prior, beta = 1):
         """
         A posterior target distribution. Calculated by adding the log likelihood and log prior probability.
+
         Parameters
         ----------
         prior : GMMPrior object

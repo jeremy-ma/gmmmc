@@ -1,9 +1,7 @@
 import time
 from unittest import TestCase
-
 import numpy as np
 import sklearn.mixture
-
 from gmmmc.gmm import GMM
 
 
@@ -29,7 +27,7 @@ class TestGMM(TestCase):
         mine = self.gmm.log_likelihood(data, 1)
         print time.time() - start
         start = time.time()
-        sklearns = np.sum(self.true_gmm.score(data)) / 2
+        sklearns = np.sum(self.true_gmm.score(data))
         print time.time() - start
         self.assertAlmostEqual(mine, sklearns)
 
@@ -44,7 +42,7 @@ class TestGMM(TestCase):
             finish_C = time.time() - start
             store_C.append(str(finish_C))
             start = time.time()
-            sklearns = np.sum(self.true_gmm.score(data)) / n_samples
+            sklearns = np.sum(self.true_gmm.score(data))
             finish_sklearn = time.time() - start
             store_sklearn.append(str(finish_sklearn))
             self.assertAlmostEqual(mine, sklearns, places=3)

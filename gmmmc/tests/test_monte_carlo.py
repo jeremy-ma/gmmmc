@@ -30,11 +30,10 @@ class TestMarkovChain(TestCase):
         prior = GMMPrior(MeansUniformPrior(-1, 1, self.n_mixtures, self.n_features),
                          CovarsStaticPrior(self.truth_gmm.covars),
                          WeightsStaticPrior(self.truth_gmm.weights))
-        target = GMMPosteriorTarget(prior)
-        proposal = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(step_size=0.003))
+        proposal = GMMBlockMetropolisProposal(propose_mean=GaussianStepMeansProposal(step_sizes=[0.003]))
         initial_gmm = GMM(means=np.random.uniform(low=-1, high=1, size=(self.n_mixtures, self.n_features)),
                           covariances=self.truth_gmm.covars, weights=self.truth_gmm.weights)
-        mc = MarkovChain(proposal, target, initial_gmm)
+        mc = MarkovChain(proposal, prior, initial_gmm)
         # make samples
         gmm_samples = mc.sample(self.X, n_samples=10000, n_jobs=-1)
         # discard gmm samples

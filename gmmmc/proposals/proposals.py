@@ -13,6 +13,7 @@ class Proposal(object):
     def get_acceptance(self):
         """
         Calculate and return the acceptance rate of the proposal.
+
         Returns
         -------
             : double
@@ -24,6 +25,7 @@ class Proposal(object):
         """
         Calculate and return the illegal proposal rate of this proposal.
         (Proposing values outside the support of the parameter space e.g covariances < 0)
+
         Returns
         -------
             : double
@@ -58,6 +60,7 @@ class GMMBlockMetropolisProposal(Proposal):
         """
         Blocked Metropolis Proposal function for a GMM.
         The parameters of the means, covariances and weights are updated separately.
+
         Parameters
         ----------
         propose_mean : Proposal object
@@ -74,6 +77,7 @@ class GMMBlockMetropolisProposal(Proposal):
     def propose(self, X, gmm, target, n_jobs=1):
         """
         Propose a new set of gmm parameters. Calls each proposal function one after another.
+
         Parameters
         ----------
         X : 2-D array_like of shape (n_samples, n_features)

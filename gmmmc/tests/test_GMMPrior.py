@@ -102,9 +102,7 @@ class TestWeightsUniformPrior(TestCase):
 
     def test_log_prob(self):
         weights = np.array([0.1 for i in xrange(10)])
-        self.assertEqual(self.prior.log_prob(weights), 0.0)
-        weights[3] = 0.5
-        self.assertEqual(self.prior.log_prob(weights), -np.inf)
+        self.assertEqual(self.prior.log_prob(weights), 12.801827480081469)
 
     def test_sample(self):
         for _ in xrange(100):
