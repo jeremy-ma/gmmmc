@@ -11,3 +11,6 @@ There are several dependencies listed in requirements.txt
     $ python setup.py install
 
 An Anaconda distribution will be made available.
+
+Documentation is available at
+http://gmmmc.readthedocs.io/en/latest/
