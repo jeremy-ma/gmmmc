@@ -1,6 +1,5 @@
 #include <stdio.h>
 
-double f();
 double data_logprob_threaded(double * __restrict data,
                              double * __restrict means,
                              double * __restrict covars,

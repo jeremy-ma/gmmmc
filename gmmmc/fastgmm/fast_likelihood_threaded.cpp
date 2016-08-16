@@ -3,7 +3,6 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <omp.h>
-#include "fast_likelihood.h"
 
 double f(){
 /* Fork a team of threads giving them their own copies of variables */

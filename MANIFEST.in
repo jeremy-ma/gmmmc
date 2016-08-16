@@ -1,0 +1,17 @@
+setup.cfg
+setup.py
+global-include *.pyx
+global-include *.cpp
+gmmmc/__init__.py
+gmmmc/gmm.py
+gmmmc/monte_carlo.py
+gmmmc/posterior.py
+gmmmc/fastgmm/__init__.py
+gmmmc/fastgmm/fast_likelihood.pyx
+gmmmc/fastgmm/fast_likelihood_threaded.cpp
+gmmmc/fastgmm/setup_fast_likelihood.py
+gmmmc/priors/__init__.py
+gmmmc/priors/prior.py
+gmmmc/proposals/__init__.py
+gmmmc/proposals/gaussian_proposals.py
+gmmmc/proposals/proposals.py

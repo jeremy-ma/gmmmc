@@ -12,10 +12,12 @@ There are several dependencies listed in requirements.txt
 
 This software is also available as a PyPi package
 
-https://pypi.python.org/pypi/gmmmc/0.2.1.7
+https://pypi.python.org/pypi/gmmmc/
 
 To install with pip
 
+    $ pip install numpy
+    $ pip install Cython
     $ pip install gmmmc
 
 Documentation is available at
