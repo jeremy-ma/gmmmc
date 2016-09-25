@@ -3,6 +3,7 @@ import numpy as np
 import scipy.stats
 from gmmmc import GMM
 
+
 class GMMPrior():
     def __init__(self, means_prior, covars_prior, weights_prior):
         """
@@ -229,6 +230,77 @@ class MeansUniformPrior(GMMParameterPrior):
     def sample(self):
         # sample means
         return np.random.uniform(self.low, self.high, size=(self.n_mixtures, self.n_features))
+
+
+class DiagCovarsWishartPrior(GMMParameterPrior):
+    def __init__(self, df, scale_matrices):
+        """
+        Inverse Wishart prior for diagonal covariance matrix
+        Parameters
+        ----------
+        df : int
+            Degrees of freedom
+        scale : ndarray of shape (d,d)
+            scale matrix
+        """
+        self.df = df
+        self.distributions = [scipy.stats.invwishart(self.df, scale_matrices[i]) \
+                              for i in xrange(len(scale_matrices))]
+
+    def log_prob(self, covars):
+        """
+        Compute the log prior probability of the covariances of a GMM.
+        Since this will be used for monte carlo simulations, we care only that it is proportional to
+        the true probability.
+
+        Parameters
+        ----------
+        covars : 2-D array_like, of shape (n_mixtures, n_features)
+            covariance vectors for the GMM
+
+        Returns
+        -------
+            : double
+            Proportional to the log probability of the covariance of the GMM.
+            w.r.t an inverse wishart distribution
+        """
+
+        if (covars < 0).any():
+            return -np.inf
+        else:
+            log_prob = np.sum([self.log_prob_single(covars[i], i) for i in xrange(len(self.distributions))])
+            return log_prob
+
+
+    def log_prob_single(self, covar, mixture_num):
+        """Compute the log probability of the means for a specific mixture.
+
+        Parameters
+        ----------
+        mean : 1-D array_like of length n_features
+            Single mean vector from a single mixture of the GMM.
+        mixture_num : int
+            Index of the mixture for the mean.
+
+        Returns
+        -------
+            : double
+            Proportional to the log prior probability for means
+        """
+        # convert diagonal covariance into full matrix
+        covar = np.diag(covar)
+        return self.distributions[mixture_num].logpdf(covar)
+
+    def sample(self):
+        """
+        Draw a sample from the inverse wishart prior distribution.
+
+        Returns
+        -------
+            : 2-D array_like of shape (n_mixtures, n_features)
+            Return a complete set of mean vectors for a GMM
+        """
+        raise NotImplementedError
 
 class DiagCovarsUniformPrior(GMMParameterPrior):
     def __init__(self, low, high, n_mixtures, n_features):
