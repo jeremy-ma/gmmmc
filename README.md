@@ -14,10 +14,16 @@ This software is also available as a PyPi package
 
 https://pypi.python.org/pypi/gmmmc/
 
-To install with pip
+To install with pip you need to install some dependencies first
 
-    $ pip install numpy
-    $ pip install Cython
+    $ pip install numpy, Cython, scipy, scikit-learn
+    
+Or alternatively, use the requirements.txt file
+
+    $ pip install -r requirements.txt
+
+Then run the command
+
     $ pip install gmmmc
 
 Documentation is available at
