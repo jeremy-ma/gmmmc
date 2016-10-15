@@ -166,7 +166,7 @@ class GaussianStepCovarProposal(Proposal):
 
 class GaussianStepWeightsProposal(Proposal):
 
-    def __init__(self,  n_mixtures, step_sizes=(0.001,)):
+    def __init__(self,  n_mixtures, step_sizes=(0.001,), threshold=0.001):
         """
         Gaussian proposal function for the weights of a GMM.
 
@@ -188,6 +188,7 @@ class GaussianStepWeightsProposal(Proposal):
         self.count_accepted = np.zeros((len(step_sizes),))
         self.count_illegal =  np.zeros((len(step_sizes),))
         self.count_proposed = np.zeros((len(step_sizes),))
+        self.threshold = threshold
 
 
         if n_mixtures > 1:
@@ -260,9 +261,9 @@ class GaussianStepWeightsProposal(Proposal):
                 current_weights_transformed = self.transformSimplex(cur_gmm.weights)
                 proposed_weights_transformed = np.random.multivariate_normal(current_weights_transformed,
                                                                              np.eye(self.n_mixtures - 1) * step_size)
-                proposed_weights = self.invTransformSimplex(proposed_weights_transformed   )
+                proposed_weights = self.invTransformSimplex(proposed_weights_transformed)
                 if np.logical_and(0 <= proposed_weights, proposed_weights <= 1).all()\
-                    and np.isclose(np.sum(proposed_weights), 1.0):
+                    and np.isclose(np.sum(proposed_weights), 1.0) and (proposed_weights>self.threshold).all():
                     previous_prob = target.log_prob(X, cur_gmm, n_jobs)
                     proposed_gmm = GMM(np.array(cur_gmm.means), np.array(cur_gmm.covars), proposed_weights)
                     proposed_prob = target.log_prob(X, proposed_gmm, n_jobs)
@@ -280,3 +281,105 @@ class GaussianStepWeightsProposal(Proposal):
         else:
             return GMM(np.array(gmm.means), np.array(gmm.covars), np.array(gmm.weights))
 
+
+class GaussianTuningStepMeansProposal(Proposal):
+    """Gaussian Proposal distribution for means of a GMM"""
+
+    def __init__(self, step_sizes=(0.001,), limit=200):
+        """
+        Gaussian proposal distribution for the means. The multivariate Gaussian is centered at the means of the current
+        state in the Markov Chain and has covariance given by step_sizes. Multiple step sizes can be specified.
+        The proposal algorithm will take these steps in the sequence specified in step_sizes.
+
+        Parameters
+        ----------
+        step_sizes : 1-D array_like
+            Iterable containing the sequence of step sizes (covariances of the Gaussian proposal distribution"
+        """
+        super(GaussianTuningStepMeansProposal, self).__init__()
+        self.limit = limit
+        self.count_steps = 0
+        self.count_acceptance_bucket = np.zeros((len(step_sizes),))
+        self.record = []
+        self.step_sizes = step_sizes
+        self.count_accepted = np.zeros((len(step_sizes),))
+        self.count_illegal =  np.zeros((len(step_sizes),))
+        self.count_proposed = np.zeros((len(step_sizes),))
+
+    def propose(self, X, gmm, target, n_jobs=1):
+        """
+        Propose a new set of GMM means.
+
+        Parameters
+        ----------
+        X : 2-D array like of shape (n_samples, n_features)
+            The observed data or evidence.
+        gmm : GMM object
+            The current state (set of gmm parameters) in the Markov Chain
+        target : GMMPosteriorTarget object
+            The target distribution to be found.
+        n_jobs : int
+            Number of cpu cores to use in the calculation of log probabilities.
+
+        Returns
+        -------
+            : GMM
+            A new GMM object initialised with new mean parameters.
+        """
+        new_means = np.array(gmm.means)
+        beta = target.beta
+        prior = target.prior
+        steps = [np.random.multivariate_normal(np.zeros(gmm.n_features),
+                                              step_size * np.eye(gmm.n_features),
+                                              size=gmm.n_mixtures)
+                 for step_size in self.step_sizes]
+
+        # calculation of prior probabilities of only the means, since only means will change
+        log_priors = np.array([prior.means_prior.log_prob_single(gmm.means[mixture], mixture) for mixture in xrange(gmm.n_mixtures)])
+        log_prob_priors = np.sum(log_priors)
+        previous_prob = beta * gmm.log_likelihood(X, n_jobs) + np.sum(log_priors)
+        for i, step in enumerate(steps):
+            for mixture in xrange(gmm.n_mixtures):
+                self.count_proposed[i] += 1
+                self.count_steps += 1
+                # propose new means
+                new_mixture_means = gmm.means[mixture] + step[mixture]
+
+                # try out the new means
+                proposed_means = np.array(new_means)
+                proposed_means[mixture] = new_mixture_means
+                proposed_gmm = GMM(proposed_means, np.array(gmm.covars), np.array(gmm.weights))
+
+                # calculate new prior
+                new_log_prob_mixture = prior.means_prior.log_prob_single(new_mixture_means, mixture)
+                new_log_prob_priors = log_prob_priors - log_priors[mixture] + new_log_prob_mixture
+
+                # priors
+                proposed_prob = beta * proposed_gmm.log_likelihood(X, n_jobs) + new_log_prob_priors
+                # ratio
+
+                ratio = proposed_prob - previous_prob
+                if ratio > 0 or ratio > np.log(np.random.uniform()):
+                    # accept proposal
+                    new_means = proposed_means
+                    previous_prob = proposed_prob
+                    # update prior probability calculation
+                    log_prob_priors = new_log_prob_priors
+                    log_priors[mixture] = new_log_prob_mixture
+                    self.count_accepted[i] += 1
+                    self.count_acceptance_bucket[i] += 1
+
+        if self.count_steps > self.limit:
+            for i, acceptances in enumerate(self.count_acceptance_bucket):
+                acceptance_ratio = acceptances / self.count_steps
+                if acceptance_ratio > 0.46:
+                    self.step_sizes[i] = self.step_sizes[i] * 2
+                elif acceptance_ratio < 0.11:
+                    self.step_sizes[i] = self.step_sizes[i] / 2
+
+            print "Acceptance Rates: {0}".format(self.count_acceptance_bucket / self.count_steps)
+            self.record.append(self.count_acceptance_bucket / self.count_steps)
+            self.count_steps = 0
+            self.count_acceptance_bucket = np.zeros((len(self.step_sizes),))
+
+        return GMM(new_means, np.array(gmm.covars), np.array(gmm.weights))

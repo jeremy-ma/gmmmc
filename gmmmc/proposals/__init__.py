@@ -1,2 +1,3 @@
 from .proposals import GMMBlockMetropolisProposal
-from .gaussian_proposals import GaussianStepMeansProposal, GaussianStepCovarProposal, GaussianStepWeightsProposal
+from .gaussian_proposals import GaussianStepMeansProposal, GaussianStepCovarProposal, GaussianStepWeightsProposal,\
+    GaussianTuningStepMeansProposal
