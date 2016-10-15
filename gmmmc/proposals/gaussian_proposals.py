@@ -2,6 +2,7 @@ import numpy as np
 from gmmmc.gmm import GMM
 from gmmmc.proposals.proposals import Proposal
 import pdb
+import logging
 
 class GaussianStepMeansProposal(Proposal):
     """Gaussian Proposal distribution for means of a GMM"""
@@ -377,7 +378,7 @@ class GaussianTuningStepMeansProposal(Proposal):
                 elif acceptance_ratio < 0.11:
                     self.step_sizes[i] = self.step_sizes[i] / 2
 
-            print "Acceptance Rates: {0}".format(self.count_acceptance_bucket / self.count_steps)
+            logging.info("Acceptance Rates: {0}".format(self.count_acceptance_bucket / self.count_steps))
             self.record.append(self.count_acceptance_bucket / self.count_steps)
             self.count_steps = 0
             self.count_acceptance_bucket = np.zeros((len(self.step_sizes),))

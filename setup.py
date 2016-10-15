@@ -14,7 +14,7 @@ ext_modules = [Extension("fast_likelihood",
 
 setup(
     name='gmmmc',
-    version='0.2.3.3',
+    version='0.2.3.4',
     packages=['gmmmc', 'gmmmc.priors', 'gmmmc.fastgmm', 'gmmmc.proposals'],
     url='http://github.com/jeremy-ma/gmmmc',
     license='',
