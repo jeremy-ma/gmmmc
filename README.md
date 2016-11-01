@@ -28,3 +28,7 @@ Then run the command
 
 Documentation is available at
 http://gmmmc.readthedocs.io/en/latest/
+
+## Research software using this package
+
+Check out the code for my undergraduate honours thesis at https://github.com/jeremy-ma/bayesian-speaker-verification.
