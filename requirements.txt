@@ -1,5 +1,5 @@
 matplotlib==1.5.1
-numpy==1.11.1
+numpy==1.22.0
 scipy==0.17.1
 Cython==0.24
 scikit-learn==0.17.1
